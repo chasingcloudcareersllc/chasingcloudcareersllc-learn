@@ -47,4 +47,4 @@ Once you've completed all 12 sections, you'll be ready for specialization paths 
 
 ## Ready?
 
-Head to the next section — [Introduction to Computers](/learn/foundations/introduction-to-computers/introduction-to-computers/) — to begin.
+Head to the next section — [Introduction to Computers](/learn/foundations/introduction-to-computers/) — to begin.

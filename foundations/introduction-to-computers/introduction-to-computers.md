@@ -125,7 +125,7 @@ Hardware alone does nothing useful. Software is the set of instructions that tel
 
 System software manages the hardware and provides a platform for other programs to run on. It includes:
 
-- **Operating System (OS)**: The core layer that manages CPU scheduling, memory allocation, file systems, device drivers, and user permissions. Linux, Windows, and macOS are the operating systems you will encounter most often. You will explore this in depth in [OS Fundamentals](/learn/foundations/os-fundamentals/os-fundamentals/).
+- **Operating System (OS)**: The core layer that manages CPU scheduling, memory allocation, file systems, device drivers, and user permissions. Linux, Windows, and macOS are the operating systems you will encounter most often. You will explore this in depth in [OS Fundamentals](/learn/foundations/os-fundamentals/).
 - **Firmware**: Low-level software stored directly on hardware chips. The BIOS or UEFI firmware on the motherboard is the first code that runs when you press the power button. Network cards, SSDs, and GPUs all have their own firmware as well.
 - **Device Drivers**: Programs that translate between the OS and specific hardware. When the OS wants to send a network packet, it communicates with the NIC driver, which knows how to talk to that particular network card.
 
@@ -141,7 +141,7 @@ Computers execute **machine code** -- raw binary instructions specific to the CP
 - **Interpreted languages** (Python, JavaScript, Ruby) are translated into machine code line by line at runtime by an **interpreter**. This makes development faster and more flexible but generally produces slower execution.
 - **Hybrid approaches** (Java, C#) compile to an intermediate **bytecode** that runs on a virtual machine (JVM, CLR), which then translates to machine code at runtime.
 
-Understanding this distinction matters when you are building and deploying software. A Go binary can run directly on a minimal container image, while a Python application needs the Python interpreter installed. You will explore these concepts further in [Programming](/learn/foundations/programming/programming/).
+Understanding this distinction matters when you are building and deploying software. A Go binary can run directly on a minimal container image, while a Python application needs the Python interpreter installed. You will explore these concepts further in [Programming](/learn/foundations/programming/).
 
 > **Try It**: If you have Python installed, you can see interpretation in action. Open a terminal and run:
 >
@@ -366,4 +366,4 @@ None -- this is where it all begins.
 
 ## Next Step
 
-Continue to [OS Fundamentals](/learn/foundations/os-fundamentals/os-fundamentals/) to learn how operating systems manage hardware and provide the environment where all software runs.
+Continue to [OS Fundamentals](/learn/foundations/os-fundamentals/) to learn how operating systems manage hardware and provide the environment where all software runs.

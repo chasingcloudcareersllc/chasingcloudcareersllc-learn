@@ -36,7 +36,7 @@ Before IaC, infrastructure was provisioned by hand. An engineer would log into a
 
 **No history** means you cannot answer basic questions. What changed? When did it change? Who changed it? Why? With manual provisioning, changes vanish into the ether the moment someone clicks "Apply" in a console.
 
-**No review process** means no one checks infrastructure changes before they go live. In [Version Control](/learn/foundations/version-control/version-control/), you learned that pull requests provide code review, discussion, and approval before changes reach `main`. Manual infrastructure changes skip all of that.
+**No review process** means no one checks infrastructure changes before they go live. In [Version Control](/learn/foundations/version-control/), you learned that pull requests provide code review, discussion, and approval before changes reach `main`. Manual infrastructure changes skip all of that.
 
 **No reproducibility** means you cannot reliably recreate an environment. Need a staging environment that matches production? Good luck clicking through 200 console screens and getting every setting right. Need to recover from a disaster? You are rebuilding from memory.
 
@@ -125,7 +125,7 @@ flowchart LR
 
 **Destroy** is for tearing everything down. When you no longer need the infrastructure, `terraform destroy` removes every resource that Terraform manages.
 
-This workflow mirrors the Git workflow you learned in [Version Control](/learn/foundations/version-control/version-control/): write changes, review them (plan/diff), commit them (apply/commit). The habit of reviewing before acting is the same.
+This workflow mirrors the Git workflow you learned in [Version Control](/learn/foundations/version-control/): write changes, review them (plan/diff), commit them (apply/commit). The habit of reviewing before acting is the same.
 
 ---
 
@@ -249,7 +249,7 @@ Initializing provider plugins...
 Terraform has been successfully initialized!
 ```
 
-Terraform downloads providers into a `.terraform` directory. This directory should be in your `.gitignore` — it is like `node_modules` or `venv`. You learned about `.gitignore` in [Version Control](/learn/foundations/version-control/version-control/); Terraform state files and the `.terraform` directory are among the most important entries.
+Terraform downloads providers into a `.terraform` directory. This directory should be in your `.gitignore` — it is like `node_modules` or `venv`. You learned about `.gitignore` in [Version Control](/learn/foundations/version-control/); Terraform state files and the `.terraform` directory are among the most important entries.
 
 ### Popular Providers
 
@@ -262,7 +262,7 @@ Terraform downloads providers into a `.terraform` directory. This directory shou
 | **Kubernetes** | `hashicorp/kubernetes` | Pods, deployments, services, config maps, and more |
 | **GitHub** | `integrations/github` | Repositories, teams, branch protections, and actions |
 
-The Docker provider is ideal for learning because it requires nothing more than Docker installed on your machine — no cloud account, no billing, no risk of unexpected charges. The examples in this section use Docker so you can follow along immediately if you completed the [Containers](/learn/foundations/containers/containers/) section.
+The Docker provider is ideal for learning because it requires nothing more than Docker installed on your machine — no cloud account, no billing, no risk of unexpected charges. The examples in this section use Docker so you can follow along immediately if you completed the [Containers](/learn/foundations/containers/) section.
 
 > **Try It**: Create a new directory called `terraform-lab`. Inside it, create a file called `main.tf` with the Docker provider configuration shown above. Run `terraform init` and observe the output. List the `.terraform` directory with `ls -la .terraform` to see what was downloaded.
 
@@ -518,7 +518,7 @@ State enables several critical capabilities:
 .terraform.lock.hcl
 ```
 
-You learned in [Version Control](/learn/foundations/version-control/version-control/) that `.gitignore` prevents files from being tracked. Terraform state files are one of the most important things to exclude.
+You learned in [Version Control](/learn/foundations/version-control/) that `.gitignore` prevents files from being tracked. Terraform state files are one of the most important things to exclude.
 
 ### Remote Backends
 
@@ -691,7 +691,7 @@ As your infrastructure grows, you will find yourself repeating the same patterns
 
 ### What Modules Are
 
-A module is a directory containing `.tf` files. Every Terraform configuration is technically a module (the **root module**). When you call another module from your configuration, it becomes a **child module**. In [Programming](/learn/foundations/programming/programming/), you learned to write functions that encapsulate logic and accept parameters. Modules serve the same purpose for infrastructure.
+A module is a directory containing `.tf` files. Every Terraform configuration is technically a module (the **root module**). When you call another module from your configuration, it becomes a **child module**. In [Programming](/learn/foundations/programming/), you learned to write functions that encapsulate logic and accept parameters. Modules serve the same purpose for infrastructure.
 
 ### Module Structure
 
@@ -949,7 +949,7 @@ version = "~> 5.0"    # allows 5.x but not 6.0
 
 **Use remote state with locking.** Local state works for learning. In any team environment, use a remote backend with locking to prevent concurrent modifications.
 
-**Never hardcode values.** Use variables for anything that might change between environments, regions, or deployments. This is the same principle you learned in [Shell Scripting](/learn/foundations/shell-scripting/shell-scripting/) and [Programming](/learn/foundations/programming/programming/) — avoid magic numbers and strings.
+**Never hardcode values.** Use variables for anything that might change between environments, regions, or deployments. This is the same principle you learned in [Shell Scripting](/learn/foundations/shell-scripting/) and [Programming](/learn/foundations/programming/) — avoid magic numbers and strings.
 
 **Always review the plan.** `terraform plan` exists to protect you. Read it carefully before every apply, especially in production. The plan is your last line of defense against unintended changes.
 
@@ -965,7 +965,7 @@ tags = {
 }
 ```
 
-**Format your code.** Run `terraform fmt` before committing. It enforces consistent style across your team, just like linters enforce style in your [Python](/learn/foundations/programming/programming/) code.
+**Format your code.** Run `terraform fmt` before committing. It enforces consistent style across your team, just like linters enforce style in your [Python](/learn/foundations/programming/) code.
 
 **Use `.gitignore` from day one.** Exclude `.terraform/`, `*.tfstate`, `*.tfstate.backup`, and any `*.tfvars` files that contain secrets.
 
@@ -1013,13 +1013,13 @@ tags = {
 
 You have completed all twelve sections of the Foundations path. Take a moment to see how far you have come and how everything connects.
 
-You started with [Introduction to Computers](/learn/foundations/introduction-to-computers/introduction-to-computers/), learning how hardware works — CPUs, memory, storage, and how binary underpins everything a computer does. That gave you the foundation to understand [OS Fundamentals](/learn/foundations/os-fundamentals/os-fundamentals/), where you learned how operating systems manage processes, memory, file systems, and users. You then put that knowledge into practice with [Linux](/learn/foundations/linux/linux/), working directly in the Ubuntu terminal to manage packages, navigate file systems, and configure permissions.
+You started with [Introduction to Computers](/learn/foundations/introduction-to-computers/), learning how hardware works — CPUs, memory, storage, and how binary underpins everything a computer does. That gave you the foundation to understand [OS Fundamentals](/learn/foundations/os-fundamentals/), where you learned how operating systems manage processes, memory, file systems, and users. You then put that knowledge into practice with [Linux](/learn/foundations/linux/), working directly in the Ubuntu terminal to manage packages, navigate file systems, and configure permissions.
 
-With a working Linux environment, you learned [Text Editing](/learn/foundations/text-editing/text-editing/) with Vim — the editor available on every server you will ever SSH into. That prepared you for [Shell Scripting](/learn/foundations/shell-scripting/shell-scripting/), where you automated tasks with Bash — variables, conditionals, loops, and pipes. You then expanded into general-purpose programming with [Python](/learn/foundations/programming/programming/), learning data structures, functions, and virtual environments.
+With a working Linux environment, you learned [Text Editing](/learn/foundations/text-editing/) with Vim — the editor available on every server you will ever SSH into. That prepared you for [Shell Scripting](/learn/foundations/shell-scripting/), where you automated tasks with Bash — variables, conditionals, loops, and pipes. You then expanded into general-purpose programming with [Python](/learn/foundations/programming/), learning data structures, functions, and virtual environments.
 
-[Version Control](/learn/foundations/version-control/version-control/) with Git and GitHub introduced the discipline of tracking every change, reviewing code through pull requests, and collaborating with branches. [Networking Fundamentals](/learn/foundations/networking-fundamentals/networking-fundamentals/) taught you how computers communicate — IP addresses, TCP/UDP, DNS, HTTP, ports, firewalls, and SSH — the invisible plumbing beneath every cloud service and deployment.
+[Version Control](/learn/foundations/version-control/) with Git and GitHub introduced the discipline of tracking every change, reviewing code through pull requests, and collaborating with branches. [Networking Fundamentals](/learn/foundations/networking-fundamentals/) taught you how computers communicate — IP addresses, TCP/UDP, DNS, HTTP, ports, firewalls, and SSH — the invisible plumbing beneath every cloud service and deployment.
 
-With those skills in place, you tackled [CI/CD](/learn/foundations/cicd/cicd/), automating the testing and deployment of code with GitHub Actions. You learned [Containers](/learn/foundations/containers/containers/) with Docker, packaging applications into portable, reproducible units. [Container Orchestration](/learn/foundations/container-orchestration/container-orchestration/) with Kubernetes showed you how to run those containers at scale — scheduling, healing, scaling, and networking across clusters of machines.
+With those skills in place, you tackled [CI/CD](/learn/foundations/cicd/), automating the testing and deployment of code with GitHub Actions. You learned [Containers](/learn/foundations/containers/) with Docker, packaging applications into portable, reproducible units. [Container Orchestration](/learn/foundations/container-orchestration/) with Kubernetes showed you how to run those containers at scale — scheduling, healing, scaling, and networking across clusters of machines.
 
 And now, with Infrastructure as Code and Terraform, you have learned how to define, version, review, and provision all of that infrastructure programmatically. Every section built on the ones before it. The shell scripts you write automate server setup. The Python scripts process data and interact with APIs. Git tracks your Terraform configurations. CI/CD pipelines run `terraform plan` on pull requests and `terraform apply` on merge. Docker containers run the applications that Terraform provisions infrastructure for. Kubernetes orchestrates those containers on the infrastructure Terraform creates.
 
@@ -1029,7 +1029,7 @@ This is not a collection of isolated skills. It is a connected system. The Found
 
 ## Prerequisites
 
-Complete [Containers](/learn/foundations/containers/containers/), [Container Orchestration](/learn/foundations/container-orchestration/container-orchestration/), and [Version Control](/learn/foundations/version-control/version-control/) first.
+Complete [Containers](/learn/foundations/containers/), [Container Orchestration](/learn/foundations/container-orchestration/), and [Version Control](/learn/foundations/version-control/) first.
 
 ## Next Step
 

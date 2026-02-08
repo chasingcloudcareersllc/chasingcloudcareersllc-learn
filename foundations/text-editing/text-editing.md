@@ -14,7 +14,7 @@ Vim (Vi IMproved) is a modal text editor that runs entirely in your terminal. Un
 
 ## Why It Matters
 
-You'll edit configuration files on remote servers, make quick fixes to scripts, and modify system settings -- all through the terminal. Knowing Vim means you're never stuck without an editor, regardless of what system you're working on. When you move into [Shell Scripting](/learn/foundations/shell-scripting/shell-scripting/), you will write and debug Bash scripts, and Vim will be the editor you reach for to get it done.
+You'll edit configuration files on remote servers, make quick fixes to scripts, and modify system settings -- all through the terminal. Knowing Vim means you're never stuck without an editor, regardless of what system you're working on. When you move into [Shell Scripting](/learn/foundations/shell-scripting/), you will write and debug Bash scripts, and Vim will be the editor you reach for to get it done.
 
 ## What You'll Learn
 
@@ -90,8 +90,8 @@ stateDiagram-v2
     Insert --> Normal : Esc
     Normal --> Visual : v, V, Ctrl+v
     Visual --> Normal : Esc
-    Normal --> Command : :
-    Command --> Normal : Enter / Esc
+    Normal --> Command : colon
+    Command --> Normal : Enter or Esc
 ```
 
 A good habit is to stay in Normal mode by default. Enter Insert mode only when you need to type, then press `Esc` immediately when you are done. This keeps the full power of Normal-mode commands always one keystroke away.
@@ -483,8 +483,8 @@ This table covers the most important commands from this guide in a single refere
 
 ## Prerequisites
 
-Complete [Linux](/learn/foundations/linux/linux/) first.
+Complete [Linux](/learn/foundations/linux/) first.
 
 ## Next Step
 
-Continue to [Shell Scripting](/learn/foundations/shell-scripting/shell-scripting/) to learn how to automate tasks by writing scripts in Bash.
+Continue to [Shell Scripting](/learn/foundations/shell-scripting/) to learn how to automate tasks by writing scripts in Bash.

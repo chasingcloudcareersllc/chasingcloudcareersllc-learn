@@ -31,7 +31,7 @@ Kubernetes is the backbone of modern cloud-native infrastructure. Every major cl
 
 ## Why Orchestration?
 
-In the [Containers](/learn/foundations/containers/containers/) section, you learned how to build and run containers with Docker. You used Docker Compose to run multi-container applications on a single host. That works for development and small deployments, but production environments introduce problems that Docker alone cannot solve.
+In the [Containers](/learn/foundations/containers/) section, you learned how to build and run containers with Docker. You used Docker Compose to run multi-container applications on a single host. That works for development and small deployments, but production environments introduce problems that Docker alone cannot solve.
 
 Consider what happens when your application grows:
 
@@ -852,7 +852,7 @@ Declarative manifests describe the desired state. Kubernetes figures out what ne
 - **Version control**: Store manifests in Git. Every change is tracked, reviewed, and reversible.
 - **Reproducibility**: If the cluster is destroyed, apply the same manifests to rebuild it exactly.
 - **Code review**: Team members can review infrastructure changes in pull requests before they are applied.
-- **Automation**: CI/CD pipelines can apply manifests automatically. This is the foundation of GitOps, which you will explore in the [Infrastructure as Code](/learn/foundations/iac/iac/) section.
+- **Automation**: CI/CD pipelines can apply manifests automatically. This is the foundation of GitOps, which you will explore in the [Infrastructure as Code](/learn/foundations/iac/) section.
 
 The rule of thumb: use imperative commands for quick experiments and learning. Use declarative manifests for anything that matters.
 
@@ -916,8 +916,8 @@ The following table covers the `kubectl` commands you will use most frequently. 
 
 ## Prerequisites
 
-Complete [Containers](/learn/foundations/containers/containers/) and [Networking Fundamentals](/learn/foundations/networking-fundamentals/networking-fundamentals/) first.
+Complete [Containers](/learn/foundations/containers/) and [Networking Fundamentals](/learn/foundations/networking-fundamentals/) first.
 
 ## Next Step
 
-Continue to [Infrastructure as Code](/learn/foundations/iac/iac/) to learn Terraform and how to define and provision infrastructure programmatically.
+Continue to [Infrastructure as Code](/learn/foundations/iac/) to learn Terraform and how to define and provision infrastructure programmatically.

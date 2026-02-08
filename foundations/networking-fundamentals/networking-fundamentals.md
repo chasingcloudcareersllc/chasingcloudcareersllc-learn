@@ -466,7 +466,7 @@ Ports 0-1023 are **well-known ports** reserved for standard services. Ports 1024
 | 8443 | HTTPS alternate | TCP |
 | 27017 | MongoDB | TCP |
 
-When you deploy services in [Containers](/learn/foundations/containers/containers/) or [Kubernetes](/learn/foundations/container-orchestration/container-orchestration/), you will map container ports to host ports. Understanding which ports your services use is essential for configuring networking and firewall rules.
+When you deploy services in [Containers](/learn/foundations/containers/) or [Kubernetes](/learn/foundations/container-orchestration/), you will map container ports to host ports. Understanding which ports your services use is essential for configuring networking and firewall rules.
 
 ### Viewing Open Ports
 
@@ -692,7 +692,7 @@ When a service is unreachable, follow this sequence:
 6. **Check local firewall**: `sudo ufw status` -- are your rules blocking traffic?
 7. **Check logs**: `sudo journalctl -u <service>` -- what does the service itself say?
 
-This systematic approach, working from network reachability up to application behavior, will solve the vast majority of networking issues you encounter in cloud infrastructure, [CI/CD pipelines](/learn/foundations/cicd/cicd/), and [container orchestration](/learn/foundations/container-orchestration/container-orchestration/).
+This systematic approach, working from network reachability up to application behavior, will solve the vast majority of networking issues you encounter in cloud infrastructure, [CI/CD pipelines](/learn/foundations/cicd/), and [container orchestration](/learn/foundations/container-orchestration/).
 
 > **Try It**: Run `ping -c 4 google.com` to test basic connectivity. Then run `tracepath google.com` (or `traceroute` on macOS) to see the hops between your machine and Google's servers. Try `nc -zv google.com 443` to verify that port 443 is open. Finally, run `curl -I https://google.com` to confirm the web service is responding.
 
@@ -713,8 +713,8 @@ This systematic approach, working from network reachability up to application be
 
 ## Prerequisites
 
-Complete [Linux](/learn/foundations/linux/linux/) and [Shell Scripting](/learn/foundations/shell-scripting/shell-scripting/) first.
+Complete [Linux](/learn/foundations/linux/) and [Shell Scripting](/learn/foundations/shell-scripting/) first.
 
 ## Next Step
 
-Continue to [CI/CD](/learn/foundations/cicd/cicd/) to learn how to automate testing and deployment with GitHub Actions.
+Continue to [CI/CD](/learn/foundations/cicd/) to learn how to automate testing and deployment with GitHub Actions.

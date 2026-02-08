@@ -16,7 +16,7 @@ The OS handles process scheduling, memory allocation, file system management, an
 
 Understanding OS fundamentals helps you diagnose why a process is consuming too much memory, why a file can't be accessed, or why a container behaves differently from a VM. These are daily realities in cloud and infrastructure roles.
 
-When you deploy a web server, troubleshoot a failing container, or configure permissions on a shared file system, you are interacting with the operating system whether you realize it or not. The concepts in this section will come up again and again as you move through [Linux](/learn/foundations/linux/linux/), [Networking](/learn/foundations/networking/networking/), and eventually [Containers](/learn/foundations/containers/containers/).
+When you deploy a web server, troubleshoot a failing container, or configure permissions on a shared file system, you are interacting with the operating system whether you realize it or not. The concepts in this section will come up again and again as you move through [Linux](/learn/foundations/linux/), [Networking](/learn/foundations/networking-fundamentals/), and eventually [Containers](/learn/foundations/containers/).
 
 ## What You'll Learn
 
@@ -344,7 +344,7 @@ Linux organizes all files into a single tree starting at the **root directory** 
 | `/mnt` | Temporary mount point for manually mounted file systems |
 | `/boot` | Kernel and bootloader files |
 
-You do not need to memorize all of these now. As you work through the [Linux](/learn/foundations/linux/linux/) section, you will interact with these directories regularly and they will become familiar.
+You do not need to memorize all of these now. As you work through the [Linux](/learn/foundations/linux/) section, you will interact with these directories regularly and they will become familiar.
 
 ### Inodes
 
@@ -639,8 +639,8 @@ flowchart TD
 
 ## Prerequisites
 
-Complete [Introduction to Computers](/learn/foundations/introduction-to-computers/introduction-to-computers/) first.
+Complete [Introduction to Computers](/learn/foundations/introduction-to-computers/) first.
 
 ## Next Step
 
-Continue to [Linux](/learn/foundations/linux/linux/) to start working hands-on with the most widely used server operating system.
+Continue to [Linux](/learn/foundations/linux/) to start working hands-on with the most widely used server operating system.

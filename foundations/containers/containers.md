@@ -119,7 +119,7 @@ By default, Docker commands require `sudo`. To run them as your regular user, ad
 sudo usermod -aG docker $USER
 ```
 
-You need to log out and log back in (or run `newgrp docker`) for the group change to take effect. This is the same `-aG` pattern you learned in [Linux](/learn/foundations/linux/linux/) for user group management.
+You need to log out and log back in (or run `newgrp docker`) for the group change to take effect. This is the same `-aG` pattern you learned in [Linux](/learn/foundations/linux/) for user group management.
 
 ### Verify the Installation
 
@@ -161,7 +161,7 @@ graph LR
     I2 -->|docker run| C3[Container 3]
 ```
 
-The workflow follows a clear path: you write a **Dockerfile** that defines how to build an image. You run `docker build` to create the image. You push the image to a registry with `docker push`. Other machines or pipelines pull the image with `docker pull` and run containers from it with `docker run`. This is how your [CI/CD](/learn/foundations/cicd/cicd/) pipelines will build and deploy applications.
+The workflow follows a clear path: you write a **Dockerfile** that defines how to build an image. You run `docker build` to create the image. You push the image to a registry with `docker push`. Other machines or pipelines pull the image with `docker pull` and run containers from it with `docker run`. This is how your [CI/CD](/learn/foundations/cicd/) pipelines will build and deploy applications.
 
 ---
 
@@ -265,7 +265,7 @@ docker logs --tail 50 web            # show only the last 50 lines
 docker logs --since 5m web           # show logs from the last 5 minutes
 ```
 
-This is the container equivalent of `tail -f /var/log/syslog` that you learned in [Linux](/learn/foundations/linux/linux/).
+This is the container equivalent of `tail -f /var/log/syslog` that you learned in [Linux](/learn/foundations/linux/).
 
 ### Executing Commands in Running Containers
 
@@ -621,7 +621,7 @@ docker run -d --name internal-api --network mynet nginx
 docker run -d --name public-api --network mynet -p 8080:80 nginx
 ```
 
-In production and in [Container Orchestration](/learn/foundations/container-orchestration/container-orchestration/) with Kubernetes, port mapping is handled by Services and Ingress controllers rather than Docker's `-p` flag. But the underlying concept is the same: mapping external traffic to container ports.
+In production and in [Container Orchestration](/learn/foundations/container-orchestration/) with Kubernetes, port mapping is handled by Services and Ingress controllers rather than Docker's `-p` flag. But the underlying concept is the same: mapping external traffic to container ports.
 
 ```mermaid
 graph LR
@@ -796,12 +796,12 @@ This rebuilds the `web` image and replaces the running container without affecti
 - Dockerfiles define how images are built. Order instructions for cache efficiency, use slim base images, and run as a non-root user.
 - Volumes provide persistent storage. Named volumes are best for production data. Bind mounts are best for development.
 - Custom Docker networks provide DNS-based service discovery. Containers on the same network can reach each other by name.
-- Docker Compose defines multi-container applications in a single YAML file. One command (`docker compose up`) starts everything. This is the foundation for local development and testing before deploying to [Container Orchestration](/learn/foundations/container-orchestration/container-orchestration/) platforms like Kubernetes.
+- Docker Compose defines multi-container applications in a single YAML file. One command (`docker compose up`) starts everything. This is the foundation for local development and testing before deploying to [Container Orchestration](/learn/foundations/container-orchestration/) platforms like Kubernetes.
 
 ## Prerequisites
 
-Complete [Linux](/learn/foundations/linux/linux/), [Networking Fundamentals](/learn/foundations/networking-fundamentals/networking-fundamentals/), and [CI/CD](/learn/foundations/cicd/cicd/) first.
+Complete [Linux](/learn/foundations/linux/), [Networking Fundamentals](/learn/foundations/networking-fundamentals/), and [CI/CD](/learn/foundations/cicd/) first.
 
 ## Next Step
 
-Continue to [Container Orchestration](/learn/foundations/container-orchestration/container-orchestration/) to learn Kubernetes and how to manage containers at scale.
+Continue to [Container Orchestration](/learn/foundations/container-orchestration/) to learn Kubernetes and how to manage containers at scale.

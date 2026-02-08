@@ -14,7 +14,7 @@ A shell script is a file containing a series of commands that the shell executes
 
 ## Why It Matters
 
-Automation is at the heart of DevOps and infrastructure work. Before you use tools like Terraform or GitHub Actions, you need to understand the scripting fundamentals they are built on. Shell scripts appear in CI/CD pipelines, container entrypoints, cron jobs, and deployment workflows. When you move into [CI/CD](/learn/foundations/cicd/cicd/) and [Infrastructure as Code](/learn/foundations/iac/iac/), every tool you use will either call shell scripts or expect you to write them for custom steps. Mastering shell scripting now gives you a foundation that pays dividends across every section that follows.
+Automation is at the heart of DevOps and infrastructure work. Before you use tools like Terraform or GitHub Actions, you need to understand the scripting fundamentals they are built on. Shell scripts appear in CI/CD pipelines, container entrypoints, cron jobs, and deployment workflows. When you move into [CI/CD](/learn/foundations/cicd/) and [Infrastructure as Code](/learn/foundations/iac/), every tool you use will either call shell scripts or expect you to write them for custom steps. Mastering shell scripting now gives you a foundation that pays dividends across every section that follows.
 
 ## What You'll Learn
 
@@ -200,7 +200,7 @@ export DATABASE_URL="postgres://localhost/mydb"
 export LOG_LEVEL="debug"
 ```
 
-You encountered `export` in the [Linux](/learn/foundations/linux/linux/) section when modifying `PATH`. The same concept applies here: any variable you want child processes to inherit must be exported.
+You encountered `export` in the [Linux](/learn/foundations/linux/) section when modifying `PATH`. The same concept applies here: any variable you want child processes to inherit must be exported.
 
 > **Try It**: Create a script called `greet.sh` that takes a name as the first argument and prints `Hello, <name>! You are user number <random>.` Use `$1` for the name and `$RANDOM` for the number. Run it with `./greet.sh cloudchase`.
 
@@ -694,7 +694,7 @@ ss -tlnp | grep LISTEN
 watch -n 2 'free -h'
 ```
 
-These pipelines demonstrate the Unix philosophy: each command does one thing well, and you compose them with pipes to solve larger problems. This same philosophy carries forward into [CI/CD](/learn/foundations/cicd/cicd/) pipelines, where individual steps are combined into workflows.
+These pipelines demonstrate the Unix philosophy: each command does one thing well, and you compose them with pipes to solve larger problems. This same philosophy carries forward into [CI/CD](/learn/foundations/cicd/) pipelines, where individual steps are combined into workflows.
 
 ---
 
@@ -1063,12 +1063,12 @@ You could schedule this script to run every hour with a cron job:
 - `set -euo pipefail` enables strict mode. Add it to every script. It catches unset variables, failed commands, and broken pipelines before they cause damage.
 - `trap` handles cleanup on exit. Use it for temporary files, locks, and graceful shutdown.
 - Cron schedules recurring tasks using a five-field time syntax. Always use absolute paths and redirect output to log files.
-- Shell scripting is the automation layer beneath every DevOps tool. The patterns you learn here -- variables, conditionals, loops, error handling -- reappear in [Programming](/learn/foundations/programming/programming/), [CI/CD](/learn/foundations/cicd/cicd/), and [Infrastructure as Code](/learn/foundations/iac/iac/).
+- Shell scripting is the automation layer beneath every DevOps tool. The patterns you learn here -- variables, conditionals, loops, error handling -- reappear in [Programming](/learn/foundations/programming/), [CI/CD](/learn/foundations/cicd/), and [Infrastructure as Code](/learn/foundations/iac/).
 
 ## Prerequisites
 
-Complete [Linux](/learn/foundations/linux/linux/) and [Text Editing](/learn/foundations/text-editing/text-editing/) first.
+Complete [Linux](/learn/foundations/linux/) and [Text Editing](/learn/foundations/text-editing/) first.
 
 ## Next Step
 
-Continue to [Programming](/learn/foundations/programming/programming/) to learn Python, the general-purpose language used across infrastructure, automation, and data work.
+Continue to [Programming](/learn/foundations/programming/) to learn Python, the general-purpose language used across infrastructure, automation, and data work.

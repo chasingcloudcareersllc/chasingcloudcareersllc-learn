@@ -14,7 +14,7 @@ Python is a high-level, interpreted programming language known for its readabili
 
 ## Why It Matters
 
-Python appears everywhere in modern infrastructure: writing Lambda functions, building CLI tools, scripting cloud API interactions, processing data, and extending CI/CD pipelines. Understanding Python gives you access to thousands of libraries and frameworks that accelerate your work. When you reach the [CI/CD](/learn/foundations/cicd/cicd/) and [Infrastructure as Code](/learn/foundations/iac/iac/) sections later in this path, you will see Python used as the glue that holds workflows together.
+Python appears everywhere in modern infrastructure: writing Lambda functions, building CLI tools, scripting cloud API interactions, processing data, and extending CI/CD pipelines. Understanding Python gives you access to thousands of libraries and frameworks that accelerate your work. When you reach the [CI/CD](/learn/foundations/cicd/) and [Infrastructure as Code](/learn/foundations/iac/) sections later in this path, you will see Python used as the glue that holds workflows together.
 
 ## What You'll Learn
 
@@ -972,7 +972,7 @@ pip install flask boto3 pyyaml
 
 ### Freezing and Reproducing Dependencies
 
-The `requirements.txt` file is the standard way to record project dependencies. This file is critical for reproducibility and will be checked into [Version Control](/learn/foundations/version-control/version-control/) alongside your code.
+The `requirements.txt` file is the standard way to record project dependencies. This file is critical for reproducibility and will be checked into [Version Control](/learn/foundations/version-control/) alongside your code.
 
 ```bash
 # Save current packages and versions to a file
@@ -1247,8 +1247,8 @@ This `if __name__` pattern is a Python convention you will see in every well-str
 
 ## Prerequisites
 
-Complete [Shell Scripting](/learn/foundations/shell-scripting/shell-scripting/) first.
+Complete [Shell Scripting](/learn/foundations/shell-scripting/) first.
 
 ## Next Step
 
-Continue to [Version Control](/learn/foundations/version-control/version-control/) to learn Git and GitHub — the tools every team uses to collaborate on code.
+Continue to [Version Control](/learn/foundations/version-control/) to learn Git and GitHub — the tools every team uses to collaborate on code.

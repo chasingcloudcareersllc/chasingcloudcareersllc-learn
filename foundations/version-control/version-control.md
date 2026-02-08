@@ -14,7 +14,7 @@ Version control tracks changes to files over time, letting you revert to previou
 
 ## Why It Matters
 
-Infrastructure as code, CI/CD pipelines, Kubernetes manifests, Dockerfiles — all of these live in Git repositories. Understanding Git is essential for collaboration, code review, and maintaining a reliable history of every change to your systems. When a deployment breaks at 2 a.m. and you need to find out exactly what changed, Git gives you the answer. When two engineers work on the same file at the same time, Git provides the tools to merge their changes cleanly. In later sections on [CI/CD](/learn/foundations/cicd/cicd/) and [Infrastructure as Code](/learn/foundations/iac/iac/), you will see that every automated workflow starts with a Git commit.
+Infrastructure as code, CI/CD pipelines, Kubernetes manifests, Dockerfiles — all of these live in Git repositories. Understanding Git is essential for collaboration, code review, and maintaining a reliable history of every change to your systems. When a deployment breaks at 2 a.m. and you need to find out exactly what changed, Git gives you the answer. When two engineers work on the same file at the same time, Git provides the tools to merge their changes cleanly. In later sections on [CI/CD](/learn/foundations/cicd/) and [Infrastructure as Code](/learn/foundations/iac/), you will see that every automated workflow starts with a Git commit.
 
 ## What You'll Learn
 
@@ -554,7 +554,7 @@ Git supports two protocols for communicating with remotes:
 | **HTTPS** | `https://github.com/user/repo.git` | Username + personal access token (or credential manager) |
 | **SSH** | `git@github.com:user/repo.git` | SSH key pair (public key registered on GitHub) |
 
-HTTPS works out of the box and is easier to set up. SSH avoids entering credentials repeatedly and is the standard for daily development. To use SSH, generate a key pair with `ssh-keygen`, add the public key to your GitHub account settings, and use the SSH URL format for remotes. You will explore SSH in detail in [Networking Fundamentals](/learn/foundations/networking-fundamentals/networking-fundamentals/).
+HTTPS works out of the box and is easier to set up. SSH avoids entering credentials repeatedly and is the standard for daily development. To use SSH, generate a key pair with `ssh-keygen`, add the public key to your GitHub account settings, and use the SSH URL format for remotes. You will explore SSH in detail in [Networking Fundamentals](/learn/foundations/networking-fundamentals/).
 
 > **Try It**: Create a new repository on GitHub. In your local `my-project` directory, add the remote with `git remote add origin <URL>`. Push your commits with `git push -u origin main`. Visit the repository on GitHub and verify that your files and commit history appear. Then clone the repository to a different directory with `git clone` and confirm the contents match.
 
@@ -773,7 +773,7 @@ git push -u origin feature/email-validation
 5. Address review feedback with additional commits.
 6. Merge the PR and clean up branches.
 
-This is the workflow used by the majority of professional software teams. You will see it again in [CI/CD](/learn/foundations/cicd/cicd/), where automated tests and deployment pipelines are triggered by pull requests and merges to `main`.
+This is the workflow used by the majority of professional software teams. You will see it again in [CI/CD](/learn/foundations/cicd/), where automated tests and deployment pipelines are triggered by pull requests and merges to `main`.
 
 ### Keeping Your Branch Up to Date
 
@@ -844,8 +844,8 @@ This table covers the commands you will use most often. Bookmark it and refer ba
 
 ## Prerequisites
 
-Complete [Programming](/learn/foundations/programming/programming/) first.
+Complete [Programming](/learn/foundations/programming/) first.
 
 ## Next Step
 
-Continue to [Networking Fundamentals](/learn/foundations/networking-fundamentals/networking-fundamentals/) to understand how computers communicate over networks.
+Continue to [Networking Fundamentals](/learn/foundations/networking-fundamentals/) to understand how computers communicate over networks.

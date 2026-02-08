@@ -59,7 +59,7 @@ Launching a small VM on a cloud provider is an excellent way to practice because
 ssh -i ~/path/to/key.pem ubuntu@<public-ip>
 ```
 
-You will use SSH extensively in later sections covering [Networking](/learn/foundations/networking/networking/) and cloud platforms, so getting comfortable with it now pays dividends.
+You will use SSH extensively in later sections covering [Networking](/learn/foundations/networking-fundamentals/) and cloud platforms, so getting comfortable with it now pays dividends.
 
 ### Docker Container
 
@@ -123,7 +123,7 @@ man ls          # opens the full manual page for ls
 ls --help       # prints a shorter usage summary
 ```
 
-Inside a `man` page, press `q` to quit, `/` to search, and `n` to jump to the next match. You will learn more about navigating text in [Text Editing](/learn/foundations/text-editing/text-editing/).
+Inside a `man` page, press `q` to quit, `/` to search, and `n` to jump to the next match. You will learn more about navigating text in [Text Editing](/learn/foundations/text-editing/).
 
 ### Tab Completion
 
@@ -354,7 +354,7 @@ apt list --installed                  # list all installed packages
 apt list --installed | grep python    # filter for packages with "python" in the name
 ```
 
-The `|` (pipe) in the last command sends the output of `apt list` into `grep`, which filters for matching lines. Piping is a fundamental concept you will explore more in [Shell Scripting](/learn/foundations/shell-scripting/shell-scripting/).
+The `|` (pipe) in the last command sends the output of `apt list` into `grep`, which filters for matching lines. Piping is a fundamental concept you will explore more in [Shell Scripting](/learn/foundations/shell-scripting/).
 
 > **Try It**: Update your package index, then install `tree` (a utility that displays directory structures as a tree). Run `tree ~/practice` to see the directory structure you created earlier. Then remove `tree` with `sudo apt remove tree`.
 
@@ -362,7 +362,7 @@ The `|` (pipe) in the last command sends the output of `apt list` into `grep`, w
 
 ## Permissions and Ownership
 
-Every file and directory in Linux has three attributes that control access: an **owner**, a **group**, and a set of **permissions**. You encountered these concepts in [OS Fundamentals](/learn/foundations/os-fundamentals/os-fundamentals/). Now you will learn to read and change them.
+Every file and directory in Linux has three attributes that control access: an **owner**, a **group**, and a set of **permissions**. You encountered these concepts in [OS Fundamentals](/learn/foundations/os-fundamentals/). Now you will learn to read and change them.
 
 ### Reading Permissions
 
@@ -449,7 +449,7 @@ Memorize these. You will use them constantly:
 | `700` | `rwx------` | Private directories, home directories |
 | `444` | `r--r--r--` | Read-only files, locked configs |
 
-SSH is particularly strict about key file permissions. If your private key has permissions wider than `600`, SSH will refuse to use it and print a warning. You will see this firsthand in the [Networking](/learn/foundations/networking/networking/) section.
+SSH is particularly strict about key file permissions. If your private key has permissions wider than `600`, SSH will refuse to use it and print a warning. You will see this firsthand in the [Networking](/learn/foundations/networking-fundamentals/) section.
 
 ### Changing Ownership with chown
 
@@ -635,7 +635,7 @@ echo 'export PATH="/opt/myapp/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc                      # reload the file without opening a new terminal
 ```
 
-The `source` command (or its shorthand `.`) re-reads the file in your current shell. You will work with these configuration files extensively in [Shell Scripting](/learn/foundations/shell-scripting/shell-scripting/).
+The `source` command (or its shorthand `.`) re-reads the file in your current shell. You will work with these configuration files extensively in [Shell Scripting](/learn/foundations/shell-scripting/).
 
 > **Try It**: Run `echo $PATH` to see your current path. Create a directory `~/bin` with `mkdir -p ~/bin`. Add it to your PATH with `export PATH="$HOME/bin:$PATH"`. Verify with `echo $PATH`. Create a simple script: write `echo "it works"` into `~/bin/hello.sh`, make it executable with `chmod +x ~/bin/hello.sh`, and run it by typing just `hello.sh`.
 
@@ -763,8 +763,8 @@ You will see messages about disk drives being detected, network interfaces comin
 
 ## Prerequisites
 
-Complete [OS Fundamentals](/learn/foundations/os-fundamentals/os-fundamentals/) first.
+Complete [OS Fundamentals](/learn/foundations/os-fundamentals/) first.
 
 ## Next Step
 
-Continue to [Text Editing](/learn/foundations/text-editing/text-editing/) to learn Vim, the text editor you'll find on virtually every Linux system.
+Continue to [Text Editing](/learn/foundations/text-editing/) to learn Vim, the text editor you'll find on virtually every Linux system.

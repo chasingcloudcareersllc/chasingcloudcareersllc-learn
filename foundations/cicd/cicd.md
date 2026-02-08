@@ -10,11 +10,11 @@ CI/CD (Continuous Integration and Continuous Deployment) automates the process o
 
 ## What Is CI/CD?
 
-Continuous Integration means automatically testing every code change. Continuous Deployment means automatically pushing tested code to production. Together, they form a pipeline that catches bugs early and ships changes reliably. In [Version Control](/learn/foundations/version-control/version-control/) you learned how teams use branches and pull requests to collaborate. CI/CD is what happens after you push a commit or open a PR — automated systems take over to verify, build, and deliver your changes.
+Continuous Integration means automatically testing every code change. Continuous Deployment means automatically pushing tested code to production. Together, they form a pipeline that catches bugs early and ships changes reliably. In [Version Control](/learn/foundations/version-control/) you learned how teams use branches and pull requests to collaborate. CI/CD is what happens after you push a commit or open a PR — automated systems take over to verify, build, and deliver your changes.
 
 ## Why It Matters
 
-Every modern engineering team uses CI/CD. It is how companies deploy dozens of times per day without breaking things. Understanding CI/CD pipelines is essential for DevOps, SRE, and any infrastructure role. When you move into [Containers](/learn/foundations/containers/containers/) and [Infrastructure as Code](/learn/foundations/iac/iac/), you will see that every container image build and every Terraform apply is driven by a CI/CD pipeline.
+Every modern engineering team uses CI/CD. It is how companies deploy dozens of times per day without breaking things. Understanding CI/CD pipelines is essential for DevOps, SRE, and any infrastructure role. When you move into [Containers](/learn/foundations/containers/) and [Infrastructure as Code](/learn/foundations/iac/), you will see that every container image build and every Terraform apply is driven by a CI/CD pipeline.
 
 ## What You'll Learn
 
@@ -406,7 +406,7 @@ These actions appear in almost every workflow:
 | `actions/upload-artifact@v4` | Save files from a job (build output, logs) | Pass artifacts between jobs |
 | `actions/download-artifact@v4` | Retrieve artifacts saved by another job | Use in deploy jobs |
 | `github/codeql-action/analyze@v3` | Run CodeQL security analysis | Automated vulnerability scanning |
-| `docker/build-push-action@v6` | Build and push Docker images | Used in [Containers](/learn/foundations/containers/containers/) pipelines |
+| `docker/build-push-action@v6` | Build and push Docker images | Used in [Containers](/learn/foundations/containers/) pipelines |
 
 ### Caching Dependencies
 
@@ -798,8 +798,8 @@ jobs:
 
 ## Prerequisites
 
-Complete [Version Control](/learn/foundations/version-control/version-control/) and [Shell Scripting](/learn/foundations/shell-scripting/shell-scripting/) first.
+Complete [Version Control](/learn/foundations/version-control/) and [Shell Scripting](/learn/foundations/shell-scripting/) first.
 
 ## Next Step
 
-Continue to [Containers](/learn/foundations/containers/containers/) to learn Docker and how to package applications into portable, reproducible environments.
+Continue to [Containers](/learn/foundations/containers/) to learn Docker and how to package applications into portable, reproducible environments.
