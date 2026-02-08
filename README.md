@@ -4,7 +4,7 @@ Learning path content for [Chasing Cloud Careers](https://chasingcloudcareersllc
 
 ## Adding Content
 
-Create a new `.md` file inside a section directory (e.g., `getting-started/`).
+Create a new `.md` file inside a section directory (e.g., `foundations/linux/`).
 
 ### Required Frontmatter
 
@@ -21,6 +21,20 @@ sidebar_position: 1
 ## Structure
 
 ```
-getting-started/
-  getting-started.md
+foundations/
+  getting-started/getting-started.md
+  introduction-to-computers/introduction-to-computers.md
+  os-fundamentals/os-fundamentals.md
+  linux/linux.md
+  text-editing/text-editing.md
+  shell-scripting/shell-scripting.md
+  programming/programming.md
+  version-control/version-control.md
+  networking-fundamentals/networking-fundamentals.md
+  cicd/cicd.md
+  containers/containers.md
+  container-orchestration/container-orchestration.md
+  iac/iac.md
 ```
+
+Each top-level directory is a learning path. Sections within a path are ordered by the website's path configuration.
