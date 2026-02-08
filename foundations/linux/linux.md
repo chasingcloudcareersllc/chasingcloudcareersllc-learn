@@ -1,7 +1,7 @@
 ---
 title: "Linux"
 description: "Get hands-on with Linux — terminal commands, package management, file operations, and user management on Ubuntu."
-sidebar_position: 1
+position: 4
 ---
 
 # Linux

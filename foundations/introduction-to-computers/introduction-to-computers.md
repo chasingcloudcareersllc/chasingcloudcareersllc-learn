@@ -1,7 +1,7 @@
 ---
 title: "Introduction to Computers"
 description: "Learn the fundamentals of how computers work — hardware, software, binary, and the boot process."
-sidebar_position: 1
+position: 2
 ---
 
 # Introduction to Computers

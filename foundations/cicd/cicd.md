@@ -1,7 +1,7 @@
 ---
 title: "CI/CD"
 description: "Automate testing and deployment with GitHub Actions — workflows, triggers, jobs, secrets, and deploy pipelines."
-sidebar_position: 1
+position: 10
 ---
 
 # CI/CD

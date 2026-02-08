@@ -1,7 +1,7 @@
 ---
 title: "Shell Scripting"
 description: "Automate tasks with Bash scripts — variables, conditionals, loops, pipes, redirects, and cron jobs."
-sidebar_position: 1
+position: 6
 ---
 
 # Shell Scripting

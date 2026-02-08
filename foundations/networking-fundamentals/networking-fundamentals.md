@@ -1,7 +1,7 @@
 ---
 title: "Networking Fundamentals"
 description: "Understand how networks work — IP addressing, TCP/UDP, DNS, HTTP, ports, firewalls, and SSH."
-sidebar_position: 1
+position: 9
 ---
 
 # Networking Fundamentals

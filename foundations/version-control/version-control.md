@@ -1,7 +1,7 @@
 ---
 title: "Version Control"
 description: "Master Git and GitHub — repositories, commits, branches, merges, pull requests, and collaboration workflows."
-sidebar_position: 1
+position: 8
 ---
 
 # Version Control

@@ -1,7 +1,7 @@
 ---
 title: "Programming"
 description: "Learn Python fundamentals — syntax, data structures, functions, file I/O, virtual environments, and package management."
-sidebar_position: 1
+position: 7
 ---
 
 # Programming

@@ -1,7 +1,7 @@
 ---
 title: "Text Editing"
 description: "Learn Vim — the terminal-based text editor found on every Linux system. Master modes, navigation, editing, and configuration."
-sidebar_position: 1
+position: 5
 ---
 
 # Text Editing

@@ -1,7 +1,7 @@
 ---
 title: "Infrastructure as Code"
 description: "Learn Terraform — providers, resources, state management, variables, modules, and the plan/apply workflow."
-sidebar_position: 1
+position: 13
 ---
 
 # Infrastructure as Code
