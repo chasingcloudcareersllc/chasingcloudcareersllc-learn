@@ -27,4 +27,4 @@ Our learning paths are designed to take you from beginner to proficient through 
 
 - Check out our [blog](https://chasingcloudcareersllc.github.io/blog/) for tips and insights
 - Connect with us on [GitHub](https://github.com/chasingcloudcareersllc)
-- Find us on [LinkedIn](https://www.linkedin.com/company/chasingcloudcareersllc)
+- Find us on [LinkedIn](https://www.linkedin.com/company/chasing-cloud-careers)
