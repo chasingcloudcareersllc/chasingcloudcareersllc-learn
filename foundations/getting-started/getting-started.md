@@ -2,6 +2,7 @@
 title: "Getting Started"
 description: "Welcome to the Foundations path. Learn what you'll cover across 12 sections and how to navigate the curriculum."
 position: 1
+icon: "compass"
 ---
 
 # Getting Started

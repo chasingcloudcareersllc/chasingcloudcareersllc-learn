@@ -2,6 +2,7 @@
 title: "CI/CD"
 description: "Automate testing and deployment with GitHub Actions — workflows, triggers, jobs, secrets, and deploy pipelines."
 position: 10
+icon: "refresh-cw"
 ---
 
 # CI/CD

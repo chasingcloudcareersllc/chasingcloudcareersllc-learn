@@ -2,6 +2,7 @@
 title: "Text Editing"
 description: "Learn Vim — the terminal-based text editor found on every Linux system. Master modes, navigation, editing, and configuration."
 position: 5
+icon: "pen-tool"
 ---
 
 # Text Editing

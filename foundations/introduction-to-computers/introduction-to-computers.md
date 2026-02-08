@@ -2,6 +2,7 @@
 title: "Introduction to Computers"
 description: "Learn the fundamentals of how computers work — hardware, software, binary, and the boot process."
 position: 2
+icon: "monitor"
 ---
 
 # Introduction to Computers

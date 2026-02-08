@@ -2,6 +2,7 @@
 title: "Containers"
 description: "Learn Docker — images, containers, Dockerfiles, volumes, networking, and Docker Compose."
 position: 11
+icon: "container"
 ---
 
 # Containers

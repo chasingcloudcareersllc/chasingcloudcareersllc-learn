@@ -2,6 +2,7 @@
 title: "OS Fundamentals"
 description: "Understand what operating systems do — processes, memory management, file systems, and user permissions."
 position: 3
+icon: "cpu"
 ---
 
 # OS Fundamentals

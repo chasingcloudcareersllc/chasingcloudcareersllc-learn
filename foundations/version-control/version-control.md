@@ -2,6 +2,7 @@
 title: "Version Control"
 description: "Master Git and GitHub — repositories, commits, branches, merges, pull requests, and collaboration workflows."
 position: 8
+icon: "git-branch"
 ---
 
 # Version Control

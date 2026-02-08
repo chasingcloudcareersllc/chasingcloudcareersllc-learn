@@ -2,6 +2,7 @@
 title: "Container Orchestration"
 description: "Learn Kubernetes — pods, deployments, services, namespaces, kubectl, and writing manifests."
 position: 12
+icon: "ship"
 ---
 
 # Container Orchestration

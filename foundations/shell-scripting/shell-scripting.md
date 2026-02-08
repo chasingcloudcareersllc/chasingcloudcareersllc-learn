@@ -2,6 +2,7 @@
 title: "Shell Scripting"
 description: "Automate tasks with Bash scripts — variables, conditionals, loops, pipes, redirects, and cron jobs."
 position: 6
+icon: "file-code"
 ---
 
 # Shell Scripting
