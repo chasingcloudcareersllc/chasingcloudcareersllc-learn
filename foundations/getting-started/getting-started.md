@@ -44,7 +44,3 @@ Once you've completed all 12 sections, you'll be ready for specialization paths 
 - **SRE** — Reliability engineering, chaos engineering, capacity planning
 - **Platform Engineering** — Internal developer platforms and toolchains
 - **AI/ML Infrastructure** — MLOps, model serving, and data pipelines
-
-## Ready?
-
-Head to the next section — [Introduction to Computers](/learn/foundations/introduction-to-computers/) — to begin.

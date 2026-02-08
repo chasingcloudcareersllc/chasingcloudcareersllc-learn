@@ -1024,13 +1024,3 @@ With those skills in place, you tackled [CI/CD](/learn/foundations/cicd/), autom
 And now, with Infrastructure as Code and Terraform, you have learned how to define, version, review, and provision all of that infrastructure programmatically. Every section built on the ones before it. The shell scripts you write automate server setup. The Python scripts process data and interact with APIs. Git tracks your Terraform configurations. CI/CD pipelines run `terraform plan` on pull requests and `terraform apply` on merge. Docker containers run the applications that Terraform provisions infrastructure for. Kubernetes orchestrates those containers on the infrastructure Terraform creates.
 
 This is not a collection of isolated skills. It is a connected system. The Foundations path has given you the shared base that every specialization builds on — whether you pursue DevOps, Cloud Engineering, SRE, Platform Engineering, or AI/ML Infrastructure.
-
----
-
-## Prerequisites
-
-Complete [Containers](/learn/foundations/containers/), [Container Orchestration](/learn/foundations/container-orchestration/), and [Version Control](/learn/foundations/version-control/) first.
-
-## Next Step
-
-Congratulations! You've completed the Foundations path. You now have the skills to move into any specialization — DevOps, Cloud Engineering, SRE, Platform Engineering, or AI/ML Infrastructure. Check back for specialization paths coming soon.
