@@ -35,13 +35,13 @@ Vim's modes are a finite state machine. This is not a metaphor. Normal mode, ins
 ```mermaid
 stateDiagram-v2
     [*] --> Normal
-    Normal --> Insert: i, a, o, c, s, R
-    Insert --> Normal: Esc / Ctrl-[
-    Normal --> Visual: v, V, Ctrl-v
-    Visual --> Normal: Esc / Ctrl-[
-    Normal --> CommandLine: : / /
-    CommandLine --> Normal: Enter / Esc
-    Visual --> CommandLine: :
+    Normal --> Insert : i, a, o, c, s, R
+    Insert --> Normal : Esc
+    Normal --> Visual : v, V, Ctrl-v
+    Visual --> Normal : Esc
+    Normal --> CmdLine : colon or slash
+    CmdLine --> Normal : Enter or Esc
+    Visual --> CmdLine : colon
 ```
 
 The modal model is efficient because of a fundamental observation about editing: most editing time is spent navigating and thinking, not typing. When you are reading code, searching for a function, moving between files, or deciding what to change, you are in normal mode. Typing new characters is a brief interruption in an otherwise navigation-heavy workflow. By separating the editing state from the typing state, Vim dedicates the entire keyboard to navigation and manipulation commands. Every letter becomes a command instead of a character.
