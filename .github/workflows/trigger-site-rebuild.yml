@@ -12,6 +12,6 @@ jobs:
       - name: Dispatch learn-content-updated event
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.DISPATCH_TOKEN }}
+          token: ${{ secrets.WEBSITE_REPO_TOKEN }}
           repository: chasingcloudcareersllc/chasingcloudcareersllc.github.io
           event-type: learn-content-updated
