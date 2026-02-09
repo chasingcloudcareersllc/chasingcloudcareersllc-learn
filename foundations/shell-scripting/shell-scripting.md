@@ -11,7 +11,7 @@ Once you're comfortable with the Linux terminal, the next step is automating rep
 
 ## What Is Shell Scripting?
 
-A shell script is a file containing a series of commands that the shell executes in sequence. Instead of typing commands one at a time, you write them into a file and run the file. Bash (Bourne Again Shell) is the most common shell on Linux systems and the default on nearly every server you will encounter in production. Writing Bash scripts is how you automate system administration, deployments, data processing, and the dozens of small repetitive tasks that consume engineering time.
+A shell script is a file containing a series of commands that the shell executes in sequence. Instead of typing commands one at a time, you write them into a file and run the file. [Bash (Bourne Again Shell)](https://www.gnu.org/software/bash/manual/) is the most common shell on Linux systems and the default on nearly every server you will encounter in production. Writing Bash scripts is how you automate system administration, deployments, data processing, and the dozens of small repetitive tasks that consume engineering time.
 
 ## Why It Matters
 
@@ -811,7 +811,7 @@ trap 'echo "Caught termination"; exit 1' TERM  # kill command
 
 ## Scheduling with Cron
 
-Cron is the built-in job scheduler on Linux. It runs commands at specific times and intervals, which makes it the standard tool for recurring tasks like log rotation, backups, health checks, and data syncs.
+Cron is the built-in job scheduler on Linux. It runs commands at specific times and intervals, which makes it the standard tool for recurring tasks like log rotation, backups, health checks, and data syncs. If you ever need to verify a cron expression, [crontab.guru](https://crontab.guru/) is an excellent interactive tool for testing schedule syntax.
 
 ### Cron Syntax
 
@@ -1052,6 +1052,179 @@ You could schedule this script to run every hour with a cron job:
 
 ---
 
+## Parameter Expansion
+
+Bash provides powerful string manipulation through **parameter expansion** — operations performed directly on variable values without external commands.
+
+### Default Values
+
+```bash
+# Use default if variable is unset or empty
+name="${1:-World}"
+echo "Hello, $name"    # "Hello, World" if no argument given
+
+# Set default AND assign it to the variable
+: "${LOG_DIR:=/var/log/myapp}"
+
+# Error if variable is unset
+: "${API_KEY:?Error: API_KEY must be set}"
+```
+
+### String Operations
+
+```bash
+filename="backup-2025-01-15.tar.gz"
+
+# Remove shortest match from beginning
+echo "${filename#*.}"       # tar.gz
+
+# Remove longest match from beginning
+echo "${filename##*.}"      # gz
+
+# Remove shortest match from end
+echo "${filename%.*}"       # backup-2025-01-15.tar
+
+# Remove longest match from end
+echo "${filename%%.*}"      # backup-2025-01-15
+
+# Substring extraction
+echo "${filename:0:6}"      # backup
+
+# String length
+echo "${#filename}"         # 27
+
+# Substitution
+echo "${filename/2025/2026}"    # backup-2026-01-15.tar.gz
+```
+
+These operations are faster than calling external commands like `sed` or `awk` for simple string manipulation, and they work in any POSIX-compatible shell.
+
+> **Try It**: Set `path="/home/clouduser/documents/report.pdf"` and use parameter expansion to extract just the filename (`report.pdf`), just the directory (`/home/clouduser/documents`), and just the extension (`pdf`).
+
+### Associative Arrays
+
+Bash 4+ supports associative arrays (hash maps / dictionaries) — arrays indexed by strings instead of numbers:
+
+```bash
+# Declare an associative array
+declare -A servers
+
+# Set values
+servers[web]="192.168.1.10"
+servers[db]="192.168.1.20"
+servers[cache]="192.168.1.30"
+
+# Access a value
+echo "${servers[web]}"    # 192.168.1.10
+
+# Iterate over keys
+for role in "${!servers[@]}"; do
+    echo "$role: ${servers[$role]}"
+done
+
+# Check if a key exists
+if [[ -v servers[web] ]]; then
+    echo "Web server is configured"
+fi
+
+# Get all keys and values
+echo "Roles: ${!servers[@]}"     # web db cache
+echo "IPs: ${servers[@]}"        # 192.168.1.10 192.168.1.20 192.168.1.30
+```
+
+Associative arrays are useful for configuration lookups, mapping hostnames to IPs, or any scenario where you need key-value pairs without an external tool.
+
+---
+
+## Argument Parsing with getopts
+
+For scripts that accept command-line flags, `getopts` provides structured argument parsing:
+
+```bash
+#!/bin/bash
+
+# Define options: v (verbose), f: (file, requires argument), h (help)
+verbose=false
+file=""
+
+while getopts "vf:h" opt; do
+    case $opt in
+        v) verbose=true ;;
+        f) file="$OPTARG" ;;
+        h)
+            echo "Usage: $0 [-v] [-f file] [-h]"
+            echo "  -v  Enable verbose output"
+            echo "  -f  Specify input file"
+            echo "  -h  Show this help"
+            exit 0
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Shift past processed options to access remaining arguments
+shift $((OPTIND - 1))
+
+if $verbose; then
+    echo "Verbose mode enabled"
+    echo "File: $file"
+    echo "Remaining arguments: $@"
+fi
+```
+
+The colon after `f` in `"vf:h"` means `-f` requires an argument. The value is available in `$OPTARG`. This pattern makes your scripts feel professional and is much more robust than manually parsing `$1`, `$2`, etc.
+
+> **Try It**: Create a script with `getopts` that accepts `-n name` and `-g greeting` options, then prints the greeting with the name.
+
+---
+
+## Debugging Scripts
+
+When a script does not behave as expected, Bash provides built-in debugging tools:
+
+```bash
+# Run entire script in debug mode (prints each command before executing)
+$ bash -x myscript.sh
+
+# Enable/disable debug mode within a script
+set -x    # Turn on debug tracing
+echo "This will be traced"
+set +x    # Turn off debug tracing
+echo "This will not"
+
+# Customize the debug prompt (default is "+ ")
+export PS4='+ ${BASH_SOURCE}:${LINENO}: '
+bash -x myscript.sh
+# Output: + myscript.sh:5: echo "hello"
+```
+
+Other useful debugging techniques:
+
+```bash
+# Exit immediately if any command fails (don't continue with bad state)
+set -e
+
+# Treat unset variables as errors
+set -u
+
+# Fail on pipe errors (not just the last command)
+set -o pipefail
+
+# Combine all three (recommended for production scripts)
+set -euo pipefail
+```
+
+The `set -euo pipefail` combination at the top of a script is considered a best practice. It catches errors early instead of letting them cascade into confusing failures.
+
+Beyond built-in debugging, [ShellCheck](https://www.shellcheck.net/) is a static analysis tool that catches common bugs, syntax issues, and portability problems in your shell scripts. You can run it locally or paste scripts into the web interface to get instant feedback. It is highly recommended as part of your scripting workflow.
+
+> **Try It**: Create a simple script with a deliberate error (like referencing an unset variable). Run it normally, then with `bash -x`, and finally add `set -euo pipefail` at the top to see the difference.
+
+---
+
 ## Key Takeaways
 
 - Every script starts with `#!/bin/bash` (the shebang) and must be made executable with `chmod +x`. This two-step process applies to every script you write.
@@ -1065,3 +1238,12 @@ You could schedule this script to run every hour with a cron job:
 - `trap` handles cleanup on exit. Use it for temporary files, locks, and graceful shutdown.
 - Cron schedules recurring tasks using a five-field time syntax. Always use absolute paths and redirect output to log files.
 - Shell scripting is the automation layer beneath every DevOps tool. The patterns you learn here -- variables, conditionals, loops, error handling -- reappear in [Programming](/learn/foundations/programming/), [CI/CD](/learn/foundations/cicd/), and [Infrastructure as Code](/learn/foundations/iac/).
+
+## Resources & Further Reading
+
+- [GNU Bash Reference Manual](https://www.gnu.org/software/bash/manual/bash.html)
+- [ShellCheck (shell script linter)](https://www.shellcheck.net/)
+- [explainshell.com](https://explainshell.com/)
+- [Bash Guide for Beginners](https://tldp.org/LDP/Bash-Beginners-Guide/html/)
+- [Google Shell Style Guide](https://google.github.io/styleguide/shellguide.html)
+- [crontab.guru](https://crontab.guru/)

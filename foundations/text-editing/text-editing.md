@@ -11,7 +11,7 @@ When you're SSH'd into a remote server with no graphical interface, you need a t
 
 ## What Is Vim?
 
-Vim (Vi IMproved) is a modal text editor that runs entirely in your terminal. Unlike editors where every keystroke produces a character on screen, Vim separates the act of navigating and manipulating text from the act of typing it. You switch between distinct modes -- one for moving around, one for inserting text, one for selecting, and one for running commands. This separation is what makes Vim feel alien at first and indispensable once it clicks. Every key in Normal mode becomes a command rather than a letter, giving you a dense vocabulary for editing without ever reaching for a mouse or a menu.
+[Vim](https://www.vim.org/) (Vi IMproved) is a modal text editor that runs entirely in your terminal. Unlike editors where every keystroke produces a character on screen, Vim separates the act of navigating and manipulating text from the act of typing it. You switch between distinct modes -- one for moving around, one for inserting text, one for selecting, and one for running commands. This separation is what makes Vim feel alien at first and indispensable once it clicks. Every key in Normal mode becomes a command rather than a letter, giving you a dense vocabulary for editing without ever reaching for a mouse or a menu.
 
 ## Why It Matters
 
@@ -481,3 +481,12 @@ This table covers the most important commands from this guide in a single refere
 - Splits (`:sp`, `:vs`) and buffers (`:e`, `:ls`, `:bn`) let you work with multiple files without leaving Vim.
 - Your `~/.vimrc` file is your personal Vim configuration. Start with the basics -- line numbers, syntax highlighting, sensible search settings -- and grow it over time.
 - Run `vimtutor` from your terminal for an interactive 30-minute tutorial that reinforces everything covered here.
+
+## Resources & Further Reading
+
+- [Vim Documentation (vimhelp.org)](https://vimhelp.org/)
+- [Open Vim (interactive tutorial)](https://www.openvim.com/)
+- [Vim Adventures (gamified learning)](https://vim-adventures.com/)
+- [Vim Tips Wiki](https://vim.fandom.com/wiki/Vim_Tips_Wiki)
+- [Neovim](https://neovim.io/)
+- [Vim.org](https://www.vim.org/)

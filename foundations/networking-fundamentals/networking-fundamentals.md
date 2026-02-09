@@ -338,13 +338,31 @@ Name:   example.com
 Address: 93.184.216.34
 ```
 
+### Tracing DNS Resolution
+
+The `dig +trace` command shows the complete DNS resolution path from root servers to the final answer:
+
+```bash
+$ dig +trace example.com
+
+; <<>> DiG 9.18.18 <<>> +trace example.com
+;; global options: +cmd
+.                       86400   IN      NS      a.root-servers.net.
+...
+com.                    172800  IN      NS      a.gtld-servers.net.
+...
+example.com.            86400   IN      A       93.184.216.34
+```
+
+This shows each step: root server → `.com` TLD server → authoritative server for `example.com`. When DNS is not resolving, `dig +trace` shows exactly where the chain breaks.
+
 > **Try It**: Run `dig +short google.com` to see Google's IP addresses. Then run `dig google.com MX` to see their mail servers. Try `dig google.com NS` to see the authoritative name servers. Finally, run `dig +trace google.com` to watch the full resolution chain from root servers down to the final answer.
 
 ---
 
 ## HTTP and HTTPS
 
-**HTTP** (HyperText Transfer Protocol) is the protocol that powers the web. Every time you load a page, submit a form, or call an API, HTTP is the protocol carrying that communication.
+[**HTTP**](https://developer.mozilla.org/en-US/docs/Web/HTTP) (HyperText Transfer Protocol) is the protocol that powers the web. Every time you load a page, submit a form, or call an API, HTTP is the protocol carrying that communication.
 
 ### Request-Response Model
 
@@ -395,11 +413,11 @@ HTTP headers carry metadata about the request or response. Common headers:
 - **Authentication**: The server proves its identity with a certificate issued by a trusted Certificate Authority (CA).
 - **Integrity**: Data cannot be tampered with in transit.
 
-HTTPS uses port **443** by default (HTTP uses port **80**). In production, you should always use HTTPS. Services like Let's Encrypt provide free TLS certificates.
+HTTPS uses port **443** by default (HTTP uses port **80**). In production, you should always use HTTPS. Services like [Let's Encrypt](https://letsencrypt.org/) provide free TLS certificates.
 
 ### Using curl
 
-`curl` is the command-line tool for making HTTP requests. You will use it constantly for testing APIs and debugging.
+[`curl`](https://curl.se/docs/) is the command-line tool for making HTTP requests. You will use it constantly for testing APIs and debugging.
 
 Fetch a page:
 
@@ -446,7 +464,7 @@ curl -L https://example.com
 
 ## Ports
 
-An IP address identifies a machine, but a machine runs many services simultaneously. **Ports** identify which service on that machine should receive the traffic. A port is a number from **0 to 65535**.
+An IP address identifies a machine, but a machine runs many services simultaneously. **Ports** identify which service on that machine should receive the traffic. A port is a number from **0 to 65535** (see the [IANA port registry](https://www.iana.org/assignments/service-names-port-numbers/) for the full list of assigned ports).
 
 The combination of an IP address and a port is called a **socket** (e.g., `192.168.1.100:443`). When your browser connects to a web server, it connects to the server's IP address on port 443 (HTTPS).
 
@@ -499,7 +517,7 @@ A **firewall** controls which network traffic is allowed into and out of a syste
 
 ### UFW (Uncomplicated Firewall)
 
-On Ubuntu, **UFW** is a user-friendly interface for the underlying `iptables` firewall. It simplifies common operations.
+On Ubuntu, [**UFW**](https://help.ubuntu.com/community/UFW) is a user-friendly interface for the underlying `iptables` firewall. It simplifies common operations.
 
 Enable the firewall:
 
@@ -563,7 +581,7 @@ A key difference: cloud security groups are **stateful**. If you allow inbound t
 
 ## SSH
 
-**SSH** (Secure Shell) is the standard protocol for secure remote access to Linux servers. It encrypts all traffic between your local machine and the remote server, including passwords, commands, and output. SSH uses **port 22** by default.
+[**SSH**](https://www.openssh.com/manual.html) (Secure Shell) is the standard protocol for secure remote access to Linux servers. It encrypts all traffic between your local machine and the remote server, including passwords, commands, and output. SSH uses **port 22** by default.
 
 ### Password vs Key Authentication
 
@@ -695,7 +713,166 @@ When a service is unreachable, follow this sequence:
 
 This systematic approach, working from network reachability up to application behavior, will solve the vast majority of networking issues you encounter in cloud infrastructure, [CI/CD pipelines](/learn/foundations/cicd/), and [container orchestration](/learn/foundations/container-orchestration/).
 
+### Viewing the Routing Table
+
+The `ip route` command shows how your system decides where to send packets:
+
+```bash
+$ ip route
+default via 10.0.0.1 dev eth0 proto dhcp metric 100
+10.0.0.0/24 dev eth0 proto kernel scope link src 10.0.0.50
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1
+```
+
+- The `default` route sends traffic to the gateway (10.0.0.1) for any destination not matched by a more specific route
+- The `10.0.0.0/24` route handles local subnet traffic directly
+- The `172.17.0.0/16` route is Docker's bridge network
+
+When packets aren't reaching their destination, `ip route` reveals whether the system knows how to reach the target network.
+
 > **Try It**: Run `ping -c 4 google.com` to test basic connectivity. Then run `tracepath google.com` (or `traceroute` on macOS) to see the hops between your machine and Google's servers. Try `nc -zv google.com 443` to verify that port 443 is open. Finally, run `curl -I https://google.com` to confirm the web service is responding.
+
+---
+
+## NAT (Network Address Translation)
+
+Private IP addresses (like 10.x.x.x or 192.168.x.x) cannot be routed on the public internet. **NAT** translates between private and public addresses, allowing devices on a local network to share a single public IP.
+
+### How NAT Works
+
+When a device on your local network (192.168.1.100) sends a request to a web server:
+
+1. The router replaces the source IP (192.168.1.100) with its public IP (203.0.113.1)
+2. The router records the mapping in a NAT table
+3. The web server responds to 203.0.113.1
+4. The router looks up the NAT table and forwards the response to 192.168.1.100
+
+### Types of NAT
+
+| Type | Direction | Use Case |
+|---|---|---|
+| **SNAT** (Source NAT) | Outbound — changes source IP | Private network accessing internet |
+| **DNAT** (Destination NAT) | Inbound — changes destination IP | Port forwarding, load balancing |
+| **PAT** (Port Address Translation) | Many-to-one using ports | Home routers (most common) |
+
+### NAT in Cloud Computing
+
+NAT is everywhere in cloud networking:
+
+- **NAT Gateways** (AWS, Azure, GCP) allow private subnet resources to reach the internet without having public IPs
+- **Load balancers** perform DNAT to route traffic to backend servers
+- **Container networking** uses NAT to map container ports to host ports (`docker run -p 8080:80`)
+
+Understanding NAT helps you debug connectivity issues like "my container can reach the internet but external traffic can't reach my container" — that's usually a missing DNAT/port mapping.
+
+> **Try It**: If you're on a Linux system, view the NAT table:
+> ```bash
+> sudo iptables -t nat -L -n
+> ```
+
+---
+
+## DHCP (Dynamic Host Configuration Protocol)
+
+When you connect a device to a network, it needs an IP address, subnet mask, default gateway, and DNS servers. **DHCP** assigns all of these automatically.
+
+### The DHCP Lease Lifecycle
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server as DHCP Server
+
+    Client->>Server: DISCOVER (broadcast: "I need an IP")
+    Server->>Client: OFFER ("Here's 192.168.1.50")
+    Client->>Server: REQUEST ("I'll take 192.168.1.50")
+    Server->>Client: ACK ("It's yours for 24 hours")
+```
+
+The IP assignment is a **lease** with an expiration time. Before the lease expires, the client requests a renewal. If the DHCP server is unreachable, the client loses its IP address.
+
+In cloud environments, DHCP works behind the scenes — your EC2 instance or VM automatically receives its private IP via DHCP from the cloud provider's infrastructure. You rarely configure DHCP servers directly, but understanding the concept helps when debugging "no IP address" issues.
+
+```bash
+# View your current DHCP lease on Linux
+$ cat /var/lib/dhcp/dhclient.leases
+
+# Release and renew DHCP lease
+$ sudo dhclient -r    # Release
+$ sudo dhclient       # Renew
+```
+
+---
+
+## Proxies and Reverse Proxies
+
+Proxies are intermediaries that sit between clients and servers. Understanding the two types is essential for infrastructure work.
+
+### Forward Proxy
+
+A forward proxy sits between clients and the internet. Clients send requests to the proxy, which forwards them to the destination.
+
+```
+Client → Forward Proxy → Internet → Web Server
+```
+
+Use cases: content filtering, caching, anonymity, corporate internet access control.
+
+### Reverse Proxy
+
+A reverse proxy sits between the internet and your servers. External clients connect to the proxy, which forwards requests to backend servers.
+
+```
+Client → Internet → Reverse Proxy → Backend Servers
+```
+
+Use cases: load balancing, SSL termination, caching, security (hiding backend servers).
+
+Common reverse proxy software:
+
+| Software | Key Strengths |
+|---|---|
+| [Nginx](https://nginx.org/) | High performance, low memory footprint |
+| [HAProxy](https://www.haproxy.org/) | Advanced load balancing, health checks |
+| [Traefik](https://traefik.io/) | Native container/Kubernetes integration |
+| [Caddy](https://caddyserver.com/) | Automatic HTTPS, simple configuration |
+
+### Load Balancing
+
+Reverse proxies commonly perform **load balancing** — distributing incoming requests across multiple backend servers:
+
+```
+                    ┌─→ Backend 1 (10.0.1.10)
+Client → Nginx ────┼─→ Backend 2 (10.0.1.11)
+                    └─→ Backend 3 (10.0.1.12)
+```
+
+Common load balancing algorithms:
+- **Round Robin** — requests go to each server in turn
+- **Least Connections** — requests go to the server with fewest active connections
+- **IP Hash** — same client always reaches the same server (session persistence)
+
+You will encounter reverse proxies in almost every production deployment. Kubernetes Ingress controllers are essentially reverse proxies.
+
+> **Try It**: Run `curl -I https://github.com` and look at the response headers. Can you identify any proxy or load balancer headers?
+
+---
+
+## mTLS (Mutual TLS)
+
+Standard TLS (HTTPS) is one-way: the client verifies the server's certificate, but the server does not verify the client. **Mutual TLS (mTLS)** adds client verification — both sides present and verify certificates.
+
+```
+Standard TLS:    Client verifies Server ✓
+Mutual TLS:      Client verifies Server ✓  AND  Server verifies Client ✓
+```
+
+mTLS is used when:
+- **Service-to-service communication** — microservices authenticate each other (service mesh tools like [Istio](https://istio.io/) and [Linkerd](https://linkerd.io/) automate this)
+- **API security** — clients must present a certificate to access the API
+- **Zero trust networks** — identity is verified on every connection, not just at the perimeter
+
+In Kubernetes environments, service meshes implement mTLS transparently — every pod gets a certificate, and all pod-to-pod traffic is encrypted and authenticated. You don't configure it manually, but understanding the concept helps when debugging connectivity issues in service mesh environments.
 
 ---
 
@@ -710,4 +887,18 @@ This systematic approach, working from network reachability up to application be
 - **Ports** identify services on a machine (22 for SSH, 80 for HTTP, 443 for HTTPS). Use `ss -tuln` to see what is listening.
 - **Firewalls** (UFW on Linux, Security Groups in the cloud) control which traffic is allowed. Default deny incoming, explicitly allow what you need.
 - **SSH** is the standard for secure remote access. Use key-based authentication (`ed25519`), protect private keys with `chmod 600`, and simplify connections with `~/.ssh/config`.
+- **NAT** translates private IPs to public IPs so local devices can reach the internet. NAT Gateways, load balancers, and container port mappings all use NAT.
+- **DHCP** automatically assigns IP addresses and network configuration. Cloud VMs receive their private IPs via DHCP behind the scenes.
+- **Reverse proxies** (Nginx, HAProxy, Traefik) sit between clients and backend servers, handling load balancing, SSL termination, and caching.
+- **mTLS** provides mutual authentication — both client and server verify each other's certificates. Service meshes automate mTLS for pod-to-pod communication.
 - When troubleshooting, work from the bottom up: DNS, then ping, then port, then service, then logs.
+
+## Resources & Further Reading
+
+- [MDN Web Docs: HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP)
+- [Cloudflare Learning Center](https://www.cloudflare.com/learning/)
+- [OpenSSH Manual](https://www.openssh.com/manual.html)
+- [curl Documentation](https://curl.se/docs/)
+- [RFC Editor](https://www.rfc-editor.org/)
+- [Subnet Calculator](https://www.subnet-calculator.com/cidr.php)
+- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)

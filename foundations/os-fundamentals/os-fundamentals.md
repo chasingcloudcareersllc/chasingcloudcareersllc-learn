@@ -125,7 +125,7 @@ There are two main kernel design philosophies:
 - **Monolithic kernels** (like Linux) include most OS services -- file systems, device drivers, networking -- directly in the kernel. This is fast because there are fewer context switches, but a bug in any driver can crash the entire kernel.
 - **Microkernels** (like Minix or QNX) keep the kernel minimal and run most services in user space. This is more stable and secure but can be slower due to the extra communication overhead.
 
-Linux, the kernel you will work with most in cloud computing, is monolithic. However, it supports **loadable kernel modules** that can be inserted and removed at runtime, giving it some of the flexibility of a microkernel design.
+[Linux](https://kernel.org/), the kernel you will work with most in cloud computing, is monolithic. However, it supports **loadable kernel modules** that can be inserted and removed at runtime, giving it some of the flexibility of a microkernel design.
 
 ---
 
@@ -225,6 +225,102 @@ This fork-and-exec model is how every command you type in a shell gets executed.
 
 > **Try It**: Run `echo $$` to see your shell's PID. Then run `bash` to start a child shell, and run `echo $$` again. Notice the PID changed. Run `echo $PPID` to see the parent PID -- it should match the first PID. Type `exit` to return to your original shell.
 
+### Identifying Zombie Processes
+
+A **zombie process** has finished executing but its entry remains in the process table because its parent has not called `wait()` to read its exit status. Zombies show a `Z` in the `STAT` column of `ps`:
+
+```bash
+# Find zombie processes
+$ ps aux | grep 'Z'
+clouduser  2045  0.0  0.0      0     0 pts/0    Z    11:23   0:00 [defunct]
+```
+
+A few zombies are normal and harmless — they consume no CPU or memory, just a process table entry. However, if thousands of zombies accumulate, it means a parent process is not properly reaping its children. The fix is to address the parent process (fix the code, restart the service), not the zombies themselves. Killing a zombie with `kill` has no effect because the process is already dead.
+
+### Process Priorities
+
+Not all processes are equally important. Linux uses **nice values** to influence scheduling priority. Nice values range from -20 (highest priority) to +19 (lowest priority). Regular users can only set nice values of 0 to +19. Only root can set negative values.
+
+```bash
+# Start a process with lower priority (nice value 10)
+$ nice -n 10 ./long-running-backup.sh
+
+# Change the nice value of a running process
+$ renice -n 5 -p 1587
+
+# View nice values in top (NI column)
+$ top
+```
+
+Nice values matter when a system is under load. A CPU-intensive backup script with a high nice value will yield CPU time to more important processes like your web server.
+
+### Signals
+
+Processes communicate through **signals** — simple notifications sent from one process to another (or from the kernel to a process). Signals are how you stop, pause, resume, and terminate processes.
+
+| Signal | Number | Description | Default Action |
+|---|---|---|---|
+| `SIGTERM` | 15 | Graceful termination request | Terminate (can be caught) |
+| `SIGKILL` | 9 | Forced termination | Terminate (cannot be caught) |
+| `SIGINT` | 2 | Interrupt from keyboard (Ctrl+C) | Terminate (can be caught) |
+| `SIGHUP` | 1 | Hangup — terminal closed or config reload | Terminate (can be caught) |
+| `SIGSTOP` | 19 | Pause process | Stop (cannot be caught) |
+| `SIGCONT` | 18 | Resume paused process | Continue |
+| `SIGCHLD` | 17 | Child process stopped or terminated | Ignored |
+
+The distinction between `SIGTERM` and `SIGKILL` is critical:
+
+- **`kill <PID>`** sends `SIGTERM` (signal 15) by default. This asks the process to shut down gracefully — it can save state, close connections, and clean up before exiting.
+- **`kill -9 <PID>`** sends `SIGKILL` (signal 9). This instantly terminates the process with no chance to clean up. Use this only when `SIGTERM` fails.
+
+Always try `SIGTERM` first. Jumping straight to `kill -9` can leave temporary files, corrupt data, or leave network connections in a broken state.
+
+```bash
+# List all available signals
+$ kill -l
+
+# Send SIGTERM (graceful shutdown)
+$ kill 1587
+
+# Send SIGKILL (forced termination) — last resort
+$ kill -9 1587
+
+# Send SIGHUP (often used to reload configuration)
+$ kill -HUP 780
+```
+
+Many services (like [nginx](https://nginx.org/) and [Apache](https://httpd.apache.org/)) use `SIGHUP` as a signal to reload their configuration without a full restart. This is a convention, not a rule — each program decides how to handle each signal.
+
+> **Try It**: Run `kill -l` to see all the signals your system supports. Start a `sleep 300` process in the background with `sleep 300 &`, note the PID, and try sending `SIGTERM` to it with `kill <PID>`. Then start another `sleep 300 &` and send `SIGINT` with `kill -2 <PID>`.
+
+### File Descriptors and Resource Limits
+
+Every open file, network connection, and pipe in a process is represented by a **file descriptor (FD)** — a small integer. Three file descriptors are opened automatically for every process:
+
+| FD | Name | Description |
+|---|---|---|
+| 0 | `stdin` | Standard input (keyboard by default) |
+| 1 | `stdout` | Standard output (terminal by default) |
+| 2 | `stderr` | Standard error (terminal by default) |
+
+When a process opens additional files or network connections, they get FD numbers starting from 3, 4, 5, and so on.
+
+The operating system limits how many file descriptors a single process can have open. You can check and modify this limit:
+
+```bash
+# View current FD limit for your shell
+$ ulimit -n
+1024
+
+# View all resource limits
+$ ulimit -a
+
+# See how many FDs a specific process is using
+$ ls /proc/<PID>/fd | wc -l
+```
+
+Running out of file descriptors is a common cause of "too many open files" errors in busy servers. If a web server or database cannot open new connections, it is often because it has reached its FD limit. The fix is to increase the limit in `/etc/security/limits.conf` or the service's systemd unit file.
+
 ---
 
 ## Memory Management
@@ -295,6 +391,40 @@ The `available` column is the most useful one. It tells you how much memory the 
 
 > **Try It**: Run `free -h` on a Linux system. Compare the `free` and `available` columns. Available will almost always be larger than free because it includes reclaimable buffer and cache memory.
 
+### The OOM Killer
+
+When a Linux system runs completely out of memory and swap, the kernel invokes the **OOM (Out-Of-Memory) Killer**. This is a last-resort mechanism that selects a process to forcefully terminate in order to free memory and keep the system alive.
+
+The OOM killer chooses its victim based on a scoring system — processes using the most memory and with the least importance get killed first. You can see OOM events in the system log:
+
+```bash
+# Check for OOM kills in the system journal
+$ journalctl -k | grep -i "out of memory"
+
+# Check a specific process's OOM score (higher = more likely to be killed)
+$ cat /proc/<PID>/oom_score
+```
+
+OOM kills are a sign that the system needs more memory or that a process has a memory leak. In cloud environments, containers often hit OOM kills when their memory limit is set too low. You will encounter this again in [Containers](/learn/foundations/containers/).
+
+### Detailed Memory Information
+
+For more detailed memory information than `free` provides, examine `/proc/meminfo`:
+
+```bash
+$ head -20 /proc/meminfo
+MemTotal:        8134656 kB
+MemFree:         3318784 kB
+MemAvailable:    5542144 kB
+Buffers:          262144 kB
+Cached:          2359296 kB
+SwapTotal:       2097152 kB
+SwapFree:        2097152 kB
+...
+```
+
+This virtual file is updated in real time by the kernel and provides the raw data that tools like `free` and `top` use for their output.
+
 ---
 
 ## File Systems
@@ -314,7 +444,7 @@ A file system provides:
 
 | File System | Used By | Key Features |
 |---|---|---|
-| **ext4** | Linux | Default for most Linux distributions. Journaling, up to 1 EB volume size. The file system you will encounter most in cloud computing. |
+| [**ext4**](https://ext4.wiki.kernel.org/) | Linux | Default for most Linux distributions. Journaling, up to 1 EB volume size. The file system you will encounter most in cloud computing. |
 | **XFS** | Linux (RHEL/CentOS default) | High performance with large files. Common in enterprise environments and used by default in Red Hat-based systems. |
 | **Btrfs** | Linux | Copy-on-write, snapshots, built-in RAID. Growing adoption for advanced use cases. |
 | **NTFS** | Windows | Journaling, access control lists, encryption. The standard Windows file system. |
@@ -521,7 +651,7 @@ The init system:
 
 ### systemd
 
-On nearly all modern Linux distributions, the init system is **systemd**. It replaced older init systems (SysVinit, Upstart) and has become the standard. Whether you are running Ubuntu, Fedora, Debian, CentOS, or Amazon Linux 2, you will interact with systemd.
+On nearly all modern Linux distributions, the init system is [**systemd**](https://systemd.io/). It replaced older init systems (SysVinit, Upstart) and has become the standard. Whether you are running Ubuntu, Fedora, Debian, CentOS, or Amazon Linux 2, you will interact with systemd.
 
 The primary command for managing services with systemd is `systemctl`:
 
@@ -625,6 +755,82 @@ flowchart TD
 
 ---
 
+## Control Groups (cgroups)
+
+**Control Groups (cgroups)** are a Linux kernel feature that lets you limit, account for, and isolate the resource usage of a collection of processes. They answer the question: "How do I prevent one process from using all the CPU or memory on a machine?"
+
+cgroups can control:
+
+- **CPU** — limit how much CPU time a group of processes can use
+- **Memory** — set a maximum memory limit; processes exceeding it get OOM-killed
+- **I/O** — throttle disk read/write bandwidth
+- **Network** — limit network bandwidth (via associated tools)
+- **PIDs** — limit the number of processes a group can create
+
+Every process on a Linux system belongs to a cgroup. You can see your current cgroup:
+
+```bash
+$ cat /proc/self/cgroup
+0::/user.slice/user-1000.slice/session-1.scope
+```
+
+cgroups are the foundation of container resource isolation. When you run a Docker container with `--memory=512m --cpus=1`, Docker creates a cgroup with those limits. The kernel enforces the limits transparently — the process inside the container does not even know it is restricted.
+
+```bash
+# View cgroup resource controllers available
+$ cat /proc/cgroups
+
+# View memory limit for a cgroup (cgroups v2)
+$ cat /sys/fs/cgroup/user.slice/memory.max
+```
+
+Understanding cgroups is essential for understanding how [Containers](/learn/foundations/containers/) and [Container Orchestration](/learn/foundations/container-orchestration/) work under the hood. Kubernetes resource requests and limits map directly to cgroup settings.
+
+> **Try It**: Run `cat /proc/self/cgroup` to see which cgroup your shell belongs to. Then explore `/sys/fs/cgroup/` to see the cgroup filesystem hierarchy.
+
+---
+
+## Namespaces
+
+While cgroups control *how much* of a resource a process can use, **namespaces** control *what* a process can see. Namespaces provide isolation by giving a process its own private view of system resources.
+
+Linux provides several types of namespaces:
+
+| Namespace | Isolates | Effect |
+|---|---|---|
+| **PID** | Process IDs | Process thinks it's PID 1; can't see processes outside its namespace |
+| **Network** | Network stack | Process gets its own IP addresses, routing table, and ports |
+| **Mount** | File system mounts | Process sees a different set of mounted file systems |
+| **User** | User and group IDs | Process can be root (UID 0) inside namespace but a regular user outside |
+| **UTS** | Hostname and domain | Process can have a different hostname |
+| **IPC** | Inter-process communication | Process has its own shared memory and semaphores |
+
+You can list active namespaces on a system:
+
+```bash
+$ lsns
+        NS TYPE   NPROCS   PID USER     COMMAND
+4026531835 cgroup    142     1 root     /sbin/init
+4026531836 pid       142     1 root     /sbin/init
+4026531837 user      142     1 root     /sbin/init
+4026531838 uts       142     1 root     /sbin/init
+4026531839 ipc       142     1 root     /sbin/init
+4026531840 net       142     1 root     /sbin/init
+4026531841 mnt       142     1 root     /sbin/init
+```
+
+Namespaces are the other half of container isolation (alongside cgroups). When you run a Docker container, Docker creates a new set of namespaces so the container has its own PID tree, its own network stack, its own filesystem view, and its own hostname — making it feel like a separate machine even though it shares the host kernel.
+
+This is the fundamental difference between containers and virtual machines:
+- **VMs** run a complete separate kernel on virtualized hardware
+- **Containers** share the host kernel but use namespaces and cgroups for isolation
+
+You will explore this distinction in depth in [Containers](/learn/foundations/containers/).
+
+> **Try It**: Run `lsns` (may require `sudo`) to see all namespaces on your system. If Docker is installed, start a container and run `lsns` again — you will see new namespaces created for the container.
+
+---
+
 ## Key Takeaways
 
 - The **operating system** is an abstraction layer between hardware and applications. It manages resources, enforces isolation, and provides a consistent interface through system calls.
@@ -635,3 +841,18 @@ flowchart TD
 - **Permissions** control who can read, write, and execute files. The model has three categories (owner, group, other) and three permission types (read, write, execute). Numeric notation (e.g., 755, 640) is used with `chmod`.
 - **systemd** is the init system on modern Linux. Use `systemctl` to start, stop, enable, and check the status of services. Use `journalctl` to read logs.
 - These concepts are interconnected -- a web server involves processes, memory, file systems, permissions, and services all working together.
+- **Signals** are how processes communicate. Always prefer `SIGTERM` over `SIGKILL` to allow graceful shutdown.
+- **cgroups** limit how much CPU, memory, and I/O a group of processes can use. They are the resource-limiting foundation of containers.
+- **Namespaces** control what a process can see — its own PID tree, network stack, filesystem, and hostname. They are the isolation foundation of containers.
+
+## Resources & Further Reading
+
+- [Linux Kernel Documentation](https://www.kernel.org/doc/html/latest/)
+- [Operating Systems: Three Easy Pieces (free textbook)](https://pages.cs.wisc.edu/~remzi/OSTEP/)
+- [systemd Documentation](https://systemd.io/)
+- [Linux man-pages project](https://man7.org/linux/man-pages/)
+- [man 7 signal](https://man7.org/linux/man-pages/man7/signal.7.html)
+- [man 7 namespaces](https://man7.org/linux/man-pages/man7/namespaces.7.html)
+- [man 7 cgroups](https://man7.org/linux/man-pages/man7/cgroups.7.html)
+- [ext4 Wiki](https://ext4.wiki.kernel.org/)
+- [Filesystem Hierarchy Standard](https://refspecs.linuxfoundation.org/FHS_3.0/fhs/index.html)

@@ -11,7 +11,7 @@ Every piece of code, configuration, and infrastructure definition should be trac
 
 ## What Is Version Control?
 
-Version control tracks changes to files over time, letting you revert to previous versions, compare changes, and collaborate with others without overwriting each other's work. Git is a **distributed** version control system — every contributor has a full copy of the repository history on their local machine. This means you can commit, branch, and view history even without a network connection. The remote server (GitHub, GitLab, Bitbucket) is just another copy that the team agrees to treat as the source of truth.
+Version control tracks changes to files over time, letting you revert to previous versions, compare changes, and collaborate with others without overwriting each other's work. [Git](https://git-scm.com/) is a **distributed** version control system — every contributor has a full copy of the repository history on their local machine. This means you can commit, branch, and view history even without a network connection. The remote server (GitHub, GitLab, Bitbucket) is just another copy that the team agrees to treat as the source of truth.
 
 ## Why It Matters
 
@@ -469,11 +469,28 @@ Conflicts sound intimidating but they are a normal part of collaboration. The ke
 
 > **Try It**: Create a branch called `feature/conflict-practice`. On that branch, create a file called `config.txt` with the line `timeout=30` and commit it. Switch to `main`, create the same file with `timeout=60`, and commit. Merge `feature/conflict-practice` into `main`. Git will report a conflict. Open `config.txt`, resolve it by picking a value, remove the markers, stage, and commit.
 
+### Recovering from Mistakes with Reflog
+
+Made a bad merge? Accidentally deleted a branch? `git reflog` is your safety net. It records every change to HEAD, even operations that don't appear in `git log`:
+
+```bash
+# View the reflog
+$ git reflog
+abc1234 HEAD@{0}: merge feature-branch: Merge made by 'recursive'
+def5678 HEAD@{1}: checkout: moving from feature-branch to main
+ghi9012 HEAD@{2}: commit: Add new feature
+
+# Undo the last merge by resetting to the state before it
+$ git reset --hard HEAD@{1}
+```
+
+The reflog keeps entries for about 90 days. As long as you haven't run `git gc`, you can recover almost anything. This makes it safe to experiment with merges, rebases, and other history-modifying operations.
+
 ---
 
 ## Working with GitHub
 
-So far, everything has been local. GitHub (and similar platforms like GitLab and Bitbucket) hosts remote repositories so teams can collaborate.
+So far, everything has been local. [GitHub](https://docs.github.com/) (and similar platforms like GitLab and Bitbucket) hosts remote repositories so teams can collaborate.
 
 ### What Are Remotes?
 
@@ -563,7 +580,7 @@ HTTPS works out of the box and is easier to set up. SSH avoids entering credenti
 
 ## Pull Requests
 
-A **pull request** (PR) is a proposal to merge one branch into another on GitHub. Pull requests are the centerpiece of team collaboration — they provide a structured place for code review, discussion, and automated checks before changes reach `main`.
+A **pull request** (PR) is a proposal to merge one branch into another on GitHub. Pull requests are the centerpiece of team collaboration — they provide a structured place for code review, discussion, and automated checks before changes reach `main`. See the [GitHub pull request documentation](https://docs.github.com/en/pull-requests) for a complete reference.
 
 ### The Pull Request Workflow
 
@@ -831,6 +848,256 @@ This table covers the commands you will use most often. Bookmark it and refer ba
 
 ---
 
+## Rebase
+
+**Rebasing** is an alternative to merging that replays your commits on top of another branch, creating a linear history:
+
+```bash
+# You're on feature-branch, which diverged from main
+$ git rebase main
+```
+
+What happens:
+1. Git identifies commits in `feature-branch` that are not in `main`
+2. Git temporarily removes those commits
+3. Git updates `feature-branch` to match `main`
+4. Git replays your commits one by one on top
+
+```mermaid
+graph LR
+    subgraph Before Rebase
+        A1[A] --> B1[B] --> C1[C]
+        B1 --> D1[D] --> E1[E]
+    end
+    subgraph After Rebase
+        A2[A] --> B2[B] --> C2[C] --> D2["D'"] --> E2["E'"]
+    end
+```
+
+### Interactive Rebase
+
+Interactive rebase lets you edit, squash, reorder, or drop commits before they are replayed:
+
+```bash
+$ git rebase -i HEAD~3
+```
+
+This opens an editor showing your last 3 commits:
+
+```
+pick abc1234 Add user model
+pick def5678 Fix typo in user model
+pick ghi9012 Add user validation
+
+# Commands:
+# p, pick = use commit
+# r, reword = use commit, but edit the commit message
+# s, squash = combine with previous commit
+# d, drop = remove commit
+```
+
+Changing `pick` to `squash` on the second commit combines it with the first, creating a cleaner history.
+
+### Rebase vs Merge
+
+| Feature | Rebase | Merge |
+|---|---|---|
+| History | Linear (clean) | Preserves branch structure |
+| Merge commits | None | Creates a merge commit |
+| Conflict resolution | Per-commit (may repeat) | Once |
+| Best for | Local cleanup before push | Integrating shared branches |
+
+### The Golden Rule
+
+**Never rebase commits that have been pushed to a shared branch.** Rebasing rewrites commit history — it creates new commits with different hashes. If someone else has based work on the original commits, rebasing creates divergent histories and confusion.
+
+Rebase your local, unpushed work freely. Once commits are shared, use merge.
+
+> **Try It**: Create a branch, make two commits, then use `git rebase -i HEAD~2` to squash them into one. Check `git log --oneline` to see the result.
+
+---
+
+## Stash
+
+Sometimes you need to switch branches but have uncommitted changes that are not ready to commit. `git stash` saves your changes temporarily:
+
+```bash
+# Save current changes to the stash
+$ git stash
+Saved working directory and index state WIP on main: abc1234 Last commit
+
+# Your working directory is now clean
+$ git status
+On branch main
+nothing to commit, working tree clean
+
+# Switch branches, do work, come back
+$ git checkout other-branch
+$ git checkout main
+
+# Restore stashed changes
+$ git stash pop
+```
+
+Useful stash commands:
+
+```bash
+# Stash with a descriptive message
+$ git stash push -m "WIP: refactoring auth module"
+
+# List all stashes
+$ git stash list
+stash@{0}: On main: WIP: refactoring auth module
+stash@{1}: WIP on main: def5678 Previous stash
+
+# Apply a specific stash (without removing it from the list)
+$ git stash apply stash@{1}
+
+# Drop a specific stash
+$ git stash drop stash@{0}
+
+# Clear all stashes
+$ git stash clear
+```
+
+Think of the stash as a clipboard for Git — a place to temporarily park changes while you handle something else.
+
+> **Try It**: Make some changes to a file, stash them with `git stash push -m "test stash"`, verify the working directory is clean, then restore them with `git stash pop`.
+
+---
+
+## Tags
+
+Tags mark specific points in history, typically used for release versions:
+
+```bash
+# Create a lightweight tag
+$ git tag v1.0.0
+
+# Create an annotated tag (recommended — includes metadata)
+$ git tag -a v1.0.0 -m "Release version 1.0.0"
+
+# List all tags
+$ git tag
+v0.1.0
+v0.2.0
+v1.0.0
+
+# View tag details
+$ git show v1.0.0
+
+# Tag a specific past commit
+$ git tag -a v0.9.0 -m "Beta release" abc1234
+
+# Push tags to remote
+$ git push origin v1.0.0     # Push a specific tag
+$ git push --tags             # Push all tags
+
+# Delete a tag
+$ git tag -d v1.0.0                    # Delete locally
+$ git push origin --delete v1.0.0     # Delete from remote
+```
+
+### Semantic Versioning
+
+Most projects use [semantic versioning](https://semver.org/) for tags: `vMAJOR.MINOR.PATCH`
+
+| Component | When to Increment | Example |
+|---|---|---|
+| MAJOR | Breaking changes | v1.0.0 → v2.0.0 |
+| MINOR | New features (backward-compatible) | v1.0.0 → v1.1.0 |
+| PATCH | Bug fixes | v1.0.0 → v1.0.1 |
+
+Tags are essential in CI/CD pipelines. A push to a tag like `v1.0.0` often triggers a release workflow that builds and deploys the software.
+
+---
+
+## Blame and Bisect
+
+When something breaks, Git provides tools to find out when and who introduced the change.
+
+### git blame
+
+`git blame` shows who last modified each line of a file:
+
+```bash
+$ git blame config.py
+abc1234 (Alice   2025-01-10 09:00)  DATABASE_URL = "postgres://..."
+def5678 (Bob     2025-01-12 14:30)  CACHE_TTL = 300
+ghi9012 (Alice   2025-01-15 11:00)  MAX_CONNECTIONS = 100
+```
+
+This tells you who to ask about a specific line and which commit introduced it. You can then use `git show abc1234` to see the full context of that change.
+
+### git bisect
+
+`git bisect` performs a binary search through commit history to find which commit introduced a bug:
+
+```bash
+# Start bisecting
+$ git bisect start
+
+# Mark the current (broken) commit as bad
+$ git bisect bad
+
+# Mark a known good commit
+$ git bisect good v1.0.0
+
+# Git checks out a commit halfway between. Test it, then:
+$ git bisect good    # if this commit works
+# or
+$ git bisect bad     # if this commit is broken
+
+# Git narrows down and checks out another commit. Repeat until:
+# abc1234 is the first bad commit
+
+# Clean up when done
+$ git bisect reset
+```
+
+For a repository with 1000 commits, bisect finds the culprit in about 10 steps (log₂ 1000 ≈ 10). This is dramatically faster than manually checking commits one by one.
+
+---
+
+## Git Hooks
+
+Git hooks are scripts that run automatically at specific points in the Git workflow. They live in `.git/hooks/` and are a powerful way to enforce quality checks.
+
+Common hooks:
+
+| Hook | When It Runs | Common Use |
+|---|---|---|
+| `pre-commit` | Before a commit is created | Run linters, formatters, tests |
+| `commit-msg` | After commit message is entered | Enforce message format |
+| `pre-push` | Before pushing to remote | Run full test suite |
+| `post-merge` | After a merge completes | Install new dependencies |
+
+Example `pre-commit` hook that runs a linter:
+
+```bash
+#!/bin/bash
+# .git/hooks/pre-commit
+
+echo "Running linter..."
+npm run lint
+if [ $? -ne 0 ]; then
+    echo "Linting failed. Fix errors before committing."
+    exit 1
+fi
+```
+
+To enable a hook, create the script in `.git/hooks/` and make it executable:
+
+```bash
+$ chmod +x .git/hooks/pre-commit
+```
+
+In practice, most teams use a tool like [pre-commit](https://pre-commit.com/) or [husky](https://typicode.github.io/husky/) to manage hooks across the team, since `.git/hooks/` is not tracked in version control.
+
+> **Try It**: Create a simple `pre-commit` hook in a test repository that prints "Running pre-commit hook..." before each commit. Make it executable and test it by committing a change.
+
+---
+
 ## Key Takeaways
 
 - Git is a distributed version control system. Every clone contains the full project history, giving you the ability to work offline and independently.
@@ -842,3 +1109,12 @@ This table covers the commands you will use most often. Bookmark it and refer ba
 - Pull requests are not just about code — they are about knowledge sharing, quality, and consistency. Write clear descriptions and give constructive reviews.
 - `.gitignore` prevents secrets, build artifacts, and OS files from entering version control. Always commit your `.gitignore` and never commit credentials.
 - The feature branch workflow (branch from `main`, work, PR, merge back) is the industry standard. You will use it daily in every professional engineering role.
+
+## Resources & Further Reading
+
+- [Pro Git Book (free, official)](https://git-scm.com/book/en/v2)
+- [Git Reference Manual](https://git-scm.com/docs)
+- [GitHub Documentation](https://docs.github.com/)
+- [Learn Git Branching (interactive)](https://learngitbranching.js.org/)
+- [GitHub Skills (interactive courses)](https://skills.github.com/)
+- [Conventional Commits](https://www.conventionalcommits.org/)

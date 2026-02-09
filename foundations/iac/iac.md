@@ -1,7 +1,7 @@
 ---
 title: "Infrastructure as Code"
 description: "Learn Terraform — providers, resources, state management, variables, modules, and the plan/apply workflow."
-position: 13
+position: 15
 icon: "blocks"
 ---
 
@@ -11,7 +11,7 @@ Clicking through cloud consoles to create resources doesn't scale. Infrastructur
 
 ## What Is Infrastructure as Code?
 
-IaC is the practice of managing infrastructure through machine-readable definition files rather than manual processes. Instead of clicking buttons in a web console to create a server, you write a configuration file that describes that server, commit it to Git, and let a tool provision it for you. Terraform by HashiCorp is the most widely adopted IaC tool, supporting AWS, Azure, GCP, Kubernetes, and hundreds of other providers through a single workflow.
+IaC is the practice of managing infrastructure through machine-readable definition files rather than manual processes. Instead of clicking buttons in a web console to create a server, you write a configuration file that describes that server, commit it to Git, and let a tool provision it for you. [Terraform](https://www.terraform.io/) by HashiCorp is the most widely adopted IaC tool, supporting AWS, Azure, GCP, Kubernetes, and hundreds of other providers through a single workflow.
 
 ## Why It Matters
 
@@ -49,13 +49,13 @@ IaC solves all of these problems. Your infrastructure is defined in files that l
 
 ## What Is Terraform?
 
-Terraform is an open-source infrastructure as code tool created by HashiCorp. You write configuration files in **HCL** (HashiCorp Configuration Language), and Terraform translates those files into API calls to provision and manage resources across cloud providers, SaaS platforms, and other services.
+Terraform is an open-source infrastructure as code tool created by HashiCorp. You write configuration files in **[HCL](https://github.com/hashicorp/hcl)** (HashiCorp Configuration Language), and Terraform translates those files into API calls to provision and manage resources across cloud providers, SaaS platforms, and other services.
 
 Terraform is **declarative**: you describe the desired state of your infrastructure, and Terraform figures out how to get there. You do not write step-by-step instructions ("create this, then create that, then attach them"). Instead, you say "I want a network with these properties and a server connected to it" and Terraform determines the correct order of operations, handles dependencies, and makes the API calls.
 
-Terraform is **provider-agnostic**: the same workflow and language work across AWS, Azure, GCP, Docker, Kubernetes, GitHub, Cloudflare, Datadog, and hundreds of other platforms. Each platform has a **provider** plugin that translates HCL configuration into the specific API calls that platform requires.
+Terraform is **provider-agnostic**: the same workflow and language work across AWS, Azure, GCP, Docker, Kubernetes, GitHub, Cloudflare, Datadog, and hundreds of other platforms. Each platform has a **[provider](https://developer.hashicorp.com/terraform/language/providers)** plugin that translates HCL configuration into the specific API calls that platform requires.
 
-Terraform is **stateful**: it maintains a record of what it has created, so it knows what already exists and what needs to change. This is what makes `terraform plan` possible — it can compare your desired configuration against the real world and tell you exactly what will happen before you apply anything.
+Terraform is **[stateful](https://developer.hashicorp.com/terraform/language/state)**: it maintains a record of what it has created, so it knows what already exists and what needs to change. This is what makes `terraform plan` possible — it can compare your desired configuration against the real world and tell you exactly what will happen before you apply anything.
 
 ---
 
@@ -229,7 +229,7 @@ terraform {
 provider "docker" {}
 ```
 
-The `source` tells Terraform where to download the provider from (the Terraform Registry). The `version` constraint pins the provider to a compatible range — `~> 3.0` means "any 3.x version but not 4.0."
+The `source` tells Terraform where to download the provider from (the [Terraform Registry](https://registry.terraform.io/)). The `version` constraint pins the provider to a compatible range — `~> 3.0` means "any 3.x version but not 4.0."
 
 ### terraform init
 
@@ -544,16 +544,48 @@ This configuration tells Terraform to:
 3. Lock the state using a DynamoDB table so two people cannot apply simultaneously
 4. Encrypt the state file at rest
 
-Other backend options include Azure Blob Storage, Google Cloud Storage, and Terraform Cloud. The principle is the same: state lives in a shared, locked, encrypted location — never on someone's laptop.
+Other [backend options](https://developer.hashicorp.com/terraform/language/settings/backends/configuration) include Azure Blob Storage, Google Cloud Storage, and Terraform Cloud. The principle is the same: state lives in a shared, locked, encrypted location — never on someone's laptop.
+
+### State Locking
+
+When using remote backends, Terraform **locks** the state file during operations to prevent concurrent modifications. With the S3 backend, locking is provided by a [DynamoDB](https://aws.amazon.com/dynamodb/) table:
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "my-terraform-state"
+    key            = "production/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-locks"
+    encrypt        = true
+  }
+}
+```
+
+If someone runs `terraform apply` while another apply is in progress, they will see a lock error. This prevents state corruption from simultaneous writes.
 
 ### State Commands
 
-| Command | What It Does |
-|---|---|
-| `terraform state list` | List all resources in state |
-| `terraform state show <resource>` | Show details of a specific resource |
-| `terraform state rm <resource>` | Remove a resource from state (does not destroy it) |
-| `terraform state mv <src> <dst>` | Rename or move a resource in state |
+Terraform provides commands to inspect and manipulate state:
+
+```bash
+# List all resources in state
+$ terraform state list
+aws_instance.web
+aws_security_group.web_sg
+aws_vpc.main
+
+# Show details of a specific resource
+$ terraform state show aws_instance.web
+
+# Move a resource (when refactoring — e.g., renaming)
+$ terraform state mv aws_instance.web aws_instance.app_server
+
+# Remove a resource from state (without destroying it)
+$ terraform state rm aws_instance.legacy
+```
+
+`terraform state mv` is essential when refactoring. Without it, renaming a resource would cause Terraform to destroy the old name and create the new name — even though nothing about the actual resource changed.
 
 > **Try It**: After applying the Docker configuration, examine the state file: run `terraform state list` to see all managed resources. Then run `terraform state show docker_container.web` to see the container's full details. Compare what you see with the output of `docker inspect web-server`.
 
@@ -970,6 +1002,23 @@ tags = {
 
 **Use `.gitignore` from day one.** Exclude `.terraform/`, `*.tfstate`, `*.tfstate.backup`, and any `*.tfvars` files that contain secrets.
 
+### Drift Detection
+
+**Drift** occurs when the actual state of infrastructure differs from what Terraform expects — usually because someone made manual changes through the cloud console.
+
+```bash
+# Detect drift by running plan (no changes should appear if everything is in sync)
+$ terraform plan
+```
+
+If `terraform plan` shows changes you didn't make, that's drift. You have three options:
+
+1. **Accept the drift** — update your `.tf` files to match the actual state
+2. **Correct the drift** — run `terraform apply` to force the infrastructure back to the desired state
+3. **Ignore the drift** — add `ignore_changes` lifecycle rules for attributes that are legitimately changed externally
+
+Running `terraform plan` regularly (even in CI) helps catch drift early before it causes problems.
+
 ---
 
 ## Terraform Command Reference
@@ -996,6 +1045,161 @@ tags = {
 
 ---
 
+## Data Sources
+
+Not everything in Terraform is created by Terraform. **Data sources** let you query existing resources — things created manually, by other Terraform configurations, or by other tools.
+
+```hcl
+# Look up the latest Ubuntu AMI
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]  # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+}
+
+# Use the data source result in a resource
+resource "aws_instance" "web" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t3.micro"
+}
+```
+
+Data sources use the `data` block (not `resource`). They read information but never create, modify, or destroy anything. Common uses:
+
+| Data Source | Purpose |
+|---|---|
+| `aws_ami` | Find the latest AMI matching criteria |
+| `aws_vpc` | Reference an existing VPC |
+| `aws_availability_zones` | List available AZs in a region |
+| `aws_caller_identity` | Get the current AWS account ID |
+
+Data sources bridge the gap between Terraform-managed and non-Terraform-managed infrastructure. They allow your configuration to adapt to its environment rather than hardcoding values.
+
+---
+
+## Lifecycle Rules
+
+Terraform's default behavior — destroy the old resource, create the new one — is not always safe. **Lifecycle rules** let you customize how Terraform handles resource changes.
+
+```hcl
+resource "aws_instance" "web" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t3.micro"
+
+  lifecycle {
+    # Create the replacement before destroying the original (zero-downtime)
+    create_before_destroy = true
+
+    # Prevent accidental deletion (Terraform will error if you try)
+    prevent_destroy = true
+
+    # Ignore changes made outside of Terraform (manual console edits)
+    ignore_changes = [
+      tags["LastModifiedBy"],
+      ami,
+    ]
+  }
+}
+```
+
+| Rule | Effect |
+|---|---|
+| `create_before_destroy` | New resource is created before old is destroyed — prevents downtime |
+| `prevent_destroy` | Terraform refuses to destroy the resource — protects databases, critical infra |
+| `ignore_changes` | Terraform ignores external changes to specified attributes — avoids drift fights |
+
+Use `prevent_destroy` on databases, storage, and any resource where data loss would be catastrophic. Use `ignore_changes` when external systems legitimately modify resource attributes (like auto-scaling tags).
+
+---
+
+## Importing Existing Resources
+
+When you adopt Terraform for existing infrastructure, you need to bring those resources under Terraform management without recreating them. `terraform import` does this.
+
+```bash
+# Import an existing AWS instance
+$ terraform import aws_instance.web i-0abc123def456
+
+# After import, the resource exists in state but you still need
+# to write the matching configuration in your .tf files
+```
+
+The import workflow:
+1. Write the `resource` block in your `.tf` file (empty or partial)
+2. Run `terraform import <resource_address> <cloud_resource_id>`
+3. Run `terraform plan` to see any drift between your config and the actual resource
+4. Update your `.tf` file until `terraform plan` shows no changes
+
+Starting with Terraform 1.5+, you can also use import blocks declaratively:
+
+```hcl
+import {
+  to = aws_instance.web
+  id = "i-0abc123def456"
+}
+```
+
+Import is a one-time operation per resource. Once imported, Terraform manages the resource normally going forward.
+
+---
+
+## for_each Deep Dive
+
+You learned `count` for creating multiple instances. `for_each` is more powerful — it uses maps or sets instead of integers, making your configuration more predictable and maintainable.
+
+### count vs for_each
+
+```hcl
+# Problem with count: removing an item shifts all indices
+variable "subnets" {
+  default = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+}
+
+# With count — removing the first item forces recreation of items 2 and 3
+resource "aws_subnet" "counted" {
+  count      = length(var.subnets)
+  cidr_block = var.subnets[count.index]
+  vpc_id     = aws_vpc.main.id
+}
+```
+
+```hcl
+# With for_each — each resource is keyed by a stable identifier
+variable "subnets" {
+  default = {
+    public-a  = "10.0.1.0/24"
+    public-b  = "10.0.2.0/24"
+    private-a = "10.0.3.0/24"
+  }
+}
+
+resource "aws_subnet" "each" {
+  for_each   = var.subnets
+  cidr_block = each.value
+  vpc_id     = aws_vpc.main.id
+
+  tags = {
+    Name = each.key
+  }
+}
+```
+
+With `for_each`, removing `public-b` only affects that one subnet. With `count`, removing index 1 shifts index 2 to 1, causing an unnecessary destroy-and-recreate.
+
+| Feature | count | for_each |
+|---|---|---|
+| Index type | Integer (0, 1, 2...) | String key |
+| Remove middle item | Shifts all subsequent items | Only removes that item |
+| Best for | Identical copies | Named or configured instances |
+
+**Rule of thumb**: Use `for_each` when resources are distinguishable. Use `count` only when creating N identical copies.
+
+---
+
 ## Key Takeaways
 
 - Infrastructure as Code replaces manual, error-prone provisioning with version-controlled, reviewable, reproducible configuration files. The same principles that make Git essential for code make IaC essential for infrastructure.
@@ -1012,16 +1216,29 @@ tags = {
 
 ## Foundations Path Complete
 
-You have completed all twelve sections of the Foundations path. Take a moment to see how far you have come and how everything connects.
+You have completed all fifteen sections of the Foundations path. Take a moment to see how far you have come and how everything connects.
 
-You started with [Introduction to Computers](/learn/foundations/introduction-to-computers/), learning how hardware works — CPUs, memory, storage, and how binary underpins everything a computer does. That gave you the foundation to understand [OS Fundamentals](/learn/foundations/os-fundamentals/), where you learned how operating systems manage processes, memory, file systems, and users. You then put that knowledge into practice with [Linux](/learn/foundations/linux/), working directly in the Ubuntu terminal to manage packages, navigate file systems, and configure permissions.
+You started with [Introduction to Computers](/learn/foundations/introduction-to-computers/), learning how hardware works — CPUs, memory, storage, and how binary underpins everything a computer does. That gave you the foundation to understand [OS Fundamentals](/learn/foundations/os-fundamentals/), where you learned how operating systems manage processes, memory, file systems, users, cgroups, and namespaces. You then put that knowledge into practice with [Linux](/learn/foundations/linux/), working directly in the Ubuntu terminal to manage packages, navigate file systems, and configure permissions.
 
-With a working Linux environment, you learned [Text Editing](/learn/foundations/text-editing/) with Vim — the editor available on every server you will ever SSH into. That prepared you for [Shell Scripting](/learn/foundations/shell-scripting/), where you automated tasks with Bash — variables, conditionals, loops, and pipes. You then expanded into general-purpose programming with [Python](/learn/foundations/programming/), learning data structures, functions, and virtual environments.
+With a working Linux environment, you learned [Text Editing](/learn/foundations/text-editing/) with Vim — the editor available on every server you will ever SSH into. That prepared you for [Shell Scripting](/learn/foundations/shell-scripting/), where you automated tasks with Bash — variables, conditionals, loops, and pipes. You then expanded into general-purpose programming with [Python](/learn/foundations/programming/), learning data structures, functions, classes, testing, and virtual environments.
 
-[Version Control](/learn/foundations/version-control/) with Git and GitHub introduced the discipline of tracking every change, reviewing code through pull requests, and collaborating with branches. [Networking Fundamentals](/learn/foundations/networking-fundamentals/) taught you how computers communicate — IP addresses, TCP/UDP, DNS, HTTP, ports, firewalls, and SSH — the invisible plumbing beneath every cloud service and deployment.
+[Version Control](/learn/foundations/version-control/) with Git and GitHub introduced the discipline of tracking every change, reviewing code through pull requests, and collaborating with branches. [Networking Fundamentals](/learn/foundations/networking-fundamentals/) taught you how computers communicate — IP addresses, TCP/UDP, DNS, HTTP, NAT, proxies, firewalls, and SSH — the invisible plumbing beneath every cloud service and deployment.
+
+[API Fundamentals](/learn/foundations/api-fundamentals/) showed you how systems communicate programmatically — REST, HTTP methods, JSON, authentication, and making API calls with curl and Python. [Security Fundamentals](/learn/foundations/security-fundamentals/) gave you the mindset and tools to keep everything secure — encryption, certificates, secrets management, and the principle of least privilege.
 
 With those skills in place, you tackled [CI/CD](/learn/foundations/cicd/), automating the testing and deployment of code with GitHub Actions. You learned [Containers](/learn/foundations/containers/) with Docker, packaging applications into portable, reproducible units. [Container Orchestration](/learn/foundations/container-orchestration/) with Kubernetes showed you how to run those containers at scale — scheduling, healing, scaling, and networking across clusters of machines.
 
 And now, with Infrastructure as Code and Terraform, you have learned how to define, version, review, and provision all of that infrastructure programmatically. Every section built on the ones before it. The shell scripts you write automate server setup. The Python scripts process data and interact with APIs. Git tracks your Terraform configurations. CI/CD pipelines run `terraform plan` on pull requests and `terraform apply` on merge. Docker containers run the applications that Terraform provisions infrastructure for. Kubernetes orchestrates those containers on the infrastructure Terraform creates.
 
 This is not a collection of isolated skills. It is a connected system. The Foundations path has given you the shared base that every specialization builds on — whether you pursue DevOps, Cloud Engineering, SRE, Platform Engineering, or AI/ML Infrastructure.
+
+---
+
+## Resources & Further Reading
+
+- [Terraform Documentation](https://developer.hashicorp.com/terraform/docs)
+- [Terraform Tutorials](https://developer.hashicorp.com/terraform/tutorials)
+- [Terraform Registry](https://registry.terraform.io/)
+- [Terraform Best Practices](https://www.terraform-best-practices.com/)
+- [OpenTofu (open-source fork)](https://opentofu.org/)
+- [Terraform Up & Running (book)](https://www.terraformupandrunning.com/)

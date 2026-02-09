@@ -1,7 +1,7 @@
 ---
 title: "Container Orchestration"
 description: "Learn Kubernetes — pods, deployments, services, namespaces, kubectl, and writing manifests."
-position: 12
+position: 14
 icon: "ship"
 ---
 
@@ -11,11 +11,11 @@ Running a single container is straightforward. Running hundreds of containers ac
 
 ## What Is Container Orchestration?
 
-Container orchestration automates the deployment, scaling, and management of containerized applications across a cluster of machines. Instead of manually starting containers on individual servers and wiring them together, an orchestration platform handles scheduling containers across nodes, restarting failed containers, load balancing traffic, rolling out updates with zero downtime, and managing the networking that lets containers find and talk to each other. Kubernetes (often abbreviated K8s) is the dominant orchestration platform, originally developed by Google and now maintained by the Cloud Native Computing Foundation (CNCF).
+Container orchestration automates the deployment, scaling, and management of containerized applications across a cluster of machines. Instead of manually starting containers on individual servers and wiring them together, an orchestration platform handles scheduling containers across nodes, restarting failed containers, load balancing traffic, rolling out updates with zero downtime, and managing the networking that lets containers find and talk to each other. [Kubernetes](https://kubernetes.io/) (often abbreviated K8s) is the dominant orchestration platform, originally developed by Google and now maintained by the Cloud Native Computing Foundation (CNCF).
 
 ## Why It Matters
 
-Kubernetes is the backbone of modern cloud-native infrastructure. Every major cloud provider offers a managed Kubernetes service — Amazon EKS, Google GKE, and Azure AKS — and most large-scale production deployments run on it. Understanding Kubernetes is essential for any infrastructure, DevOps, or SRE career path. Even if you end up using a managed platform that abstracts some of the complexity, knowing what is happening underneath makes you dramatically more effective at debugging, optimizing, and designing systems.
+Kubernetes is the backbone of modern cloud-native infrastructure. Every major cloud provider offers a managed Kubernetes service — [Amazon EKS](https://docs.aws.amazon.com/eks/), [Google GKE](https://cloud.google.com/kubernetes-engine/docs), and [Azure AKS](https://learn.microsoft.com/en-us/azure/aks/) — and most large-scale production deployments run on it. Understanding Kubernetes is essential for any infrastructure, DevOps, or SRE career path. Even if you end up using a managed platform that abstracts some of the complexity, knowing what is happening underneath makes you dramatically more effective at debugging, optimizing, and designing systems.
 
 ## What You'll Learn
 
@@ -24,7 +24,7 @@ Kubernetes is the backbone of modern cloud-native infrastructure. Every major cl
 - Services and networking within a cluster
 - Namespaces for resource isolation
 - Writing and applying YAML manifests
-- Using `kubectl` to manage workloads
+- Using [`kubectl`](https://kubernetes.io/docs/reference/kubectl/) to manage workloads
 - ConfigMaps and Secrets
 - Declarative vs imperative workflow patterns
 
@@ -136,13 +136,13 @@ You do not need a cloud account or a multi-node cluster to learn Kubernetes. Sev
 
 | Tool | Description | Best For |
 |---|---|---|
-| **minikube** | Runs a single-node Kubernetes cluster in a VM or container | Learning and testing; most popular for beginners |
+| [**minikube**](https://minikube.sigs.k8s.io/docs/) | Runs a single-node Kubernetes cluster in a VM or container | Learning and testing; most popular for beginners |
 | **kind** (Kubernetes in Docker) | Runs Kubernetes nodes as Docker containers | CI/CD pipelines and multi-node testing |
 | **Docker Desktop** | Includes a built-in single-node Kubernetes cluster | Users already running Docker Desktop |
 
 ### Installing minikube
 
-Install minikube and kubectl (the Kubernetes command-line tool):
+Install [minikube](https://minikube.sigs.k8s.io/docs/) and [kubectl](https://kubernetes.io/docs/reference/kubectl/) (the Kubernetes command-line tool):
 
 ```bash
 # macOS (using Homebrew)
@@ -902,6 +902,407 @@ The following table covers the `kubectl` commands you will use most frequently. 
 
 ---
 
+## Liveness and Readiness Probes
+
+Kubernetes uses **probes** to monitor container health and make smart traffic decisions.
+
+### Liveness Probe
+
+Checks if the container is alive. If it fails, Kubernetes **restarts** the container.
+
+### Readiness Probe
+
+Checks if the container is ready to receive traffic. If it fails, Kubernetes **removes it from the Service** (stops sending traffic) but does not restart it.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-app
+spec:
+  containers:
+    - name: app
+      image: myapp:1.0.0
+      ports:
+        - containerPort: 8080
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 8080
+        initialDelaySeconds: 15
+        periodSeconds: 10
+        failureThreshold: 3
+      readinessProbe:
+        httpGet:
+          path: /ready
+          port: 8080
+        initialDelaySeconds: 5
+        periodSeconds: 5
+```
+
+Probe types:
+
+| Type | How It Works | Best For |
+|---|---|---|
+| `httpGet` | Makes an HTTP request; success = 2xx status | Web applications |
+| `tcpSocket` | Opens a TCP connection to a port | Databases, non-HTTP services |
+| `exec` | Runs a command inside the container; success = exit code 0 | Custom health checks |
+
+Without probes, Kubernetes only knows if the process is running — not if it is actually working. A stuck web server (process alive but not responding) would continue receiving traffic without probes to detect the problem.
+
+> **Try It**: Add a liveness and readiness probe to one of your existing deployments. Deploy it and check `kubectl describe pod <name>` to see the probe results.
+
+---
+
+## Resource Requests and Limits
+
+Every container in Kubernetes should declare how much CPU and memory it needs. This ensures fair scheduling and prevents noisy neighbors.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-app
+spec:
+  containers:
+    - name: app
+      image: myapp:1.0.0
+      resources:
+        requests:
+          memory: "128Mi"
+          cpu: "250m"      # 250 millicores = 0.25 CPU
+        limits:
+          memory: "256Mi"
+          cpu: "500m"      # 500 millicores = 0.5 CPU
+```
+
+| Field | Purpose | What Happens |
+|---|---|---|
+| `requests` | Minimum guaranteed resources | Used by scheduler for placement |
+| `limits` | Maximum allowed resources | Enforced at runtime |
+
+- **CPU exceeded**: container is **throttled** (slowed down)
+- **Memory exceeded**: container is **OOM killed** and restarted
+
+### QoS Classes
+
+Kubernetes assigns Quality of Service classes based on your resource configuration:
+
+| QoS Class | Condition | Eviction Priority |
+|---|---|---|
+| **Guaranteed** | requests = limits for all containers | Last to be evicted |
+| **Burstable** | At least one request or limit set | Middle |
+| **BestEffort** | No requests or limits set | First to be evicted |
+
+Always set both requests and limits in production. Without them, your pods get `BestEffort` status and are the first to be evicted when the node runs out of resources.
+
+> **Try It**: Add resource requests and limits to a deployment, apply it, and run `kubectl describe pod <name>` to see the QoS class assigned.
+
+---
+
+## Persistent Volumes and Claims
+
+By default, data inside a container is ephemeral — it disappears when the pod is deleted. **Persistent Volumes (PV)** and **Persistent Volume Claims (PVC)** provide durable storage.
+
+### The Storage Abstraction
+
+```
+Administrator creates → PersistentVolume (PV)     [actual storage]
+Developer creates    → PersistentVolumeClaim (PVC) [request for storage]
+Pod uses            → PVC mount                    [access to storage]
+```
+
+### PersistentVolumeClaim
+
+In most cloud environments, you only need to create a PVC — the cloud provider dynamically provisions the PV:
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard
+```
+
+### Using a PVC in a Pod
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: postgres
+spec:
+  containers:
+    - name: postgres
+      image: postgres:16
+      volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: postgres-data
+```
+
+### Access Modes
+
+| Mode | Short | Description |
+|---|---|---|
+| ReadWriteOnce | RWO | One node can mount read-write |
+| ReadOnlyMany | ROX | Many nodes can mount read-only |
+| ReadWriteMany | RWX | Many nodes can mount read-write |
+
+`ReadWriteOnce` is the most common for databases and stateful applications. `ReadWriteMany` requires special storage backends (like NFS or cloud file storage).
+
+> **Try It**: Create a PVC and a pod that mounts it. Write data to the mounted path, delete the pod, create a new pod mounting the same PVC, and verify the data persists.
+
+---
+
+## Ingress
+
+Services expose pods within the cluster, but **Ingress** exposes HTTP/HTTPS routes from outside the cluster to services inside it.
+
+### Why Ingress?
+
+Without Ingress, you would need a separate LoadBalancer Service for each application — expensive and inflexible. Ingress lets you route multiple applications through a single load balancer based on hostnames and paths.
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 80
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+    - host: admin.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-service
+                port:
+                  number: 80
+```
+
+### Ingress Controllers
+
+An Ingress resource does nothing on its own — you need an **Ingress Controller** to implement the routing. Common controllers:
+
+| Controller | Key Features |
+|---|---|
+| [NGINX Ingress](https://kubernetes.github.io/ingress-nginx/) | Most widely used, feature-rich |
+| [Traefik](https://doc.traefik.io/traefik/providers/kubernetes-ingress/) | Auto-discovery, Let's Encrypt integration |
+| [AWS ALB Ingress](https://kubernetes-sigs.github.io/aws-load-balancer-controller/) | Native AWS Application Load Balancer |
+
+The Ingress controller watches for Ingress resources and configures its reverse proxy accordingly — it is the Kubernetes equivalent of the reverse proxies you learned about in [Networking Fundamentals](/learn/foundations/networking-fundamentals/).
+
+---
+
+## RBAC (Role-Based Access Control)
+
+Kubernetes RBAC controls who can do what within the cluster. It follows the principle of least privilege from [Security Fundamentals](/learn/foundations/security-fundamentals/).
+
+### RBAC Components
+
+| Resource | Scope | Purpose |
+|---|---|---|
+| **Role** | Namespace | Defines permissions within a namespace |
+| **ClusterRole** | Cluster-wide | Defines permissions across the entire cluster |
+| **RoleBinding** | Namespace | Grants a Role to a user/group/service account |
+| **ClusterRoleBinding** | Cluster-wide | Grants a ClusterRole cluster-wide |
+
+### Example: Read-Only Access to Pods
+
+```yaml
+# Role: allows reading pods in the "production" namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: production
+  name: pod-reader
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
+---
+# RoleBinding: grants the role to user "alice"
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: production
+  name: read-pods-binding
+subjects:
+  - kind: User
+    name: alice
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+```
+
+### Service Account Permissions
+
+Pods run as service accounts. By default, pods get the `default` service account which has minimal permissions. For pods that need to interact with the Kubernetes API (like CI/CD controllers or operators), create a dedicated service account with only the permissions needed:
+
+```bash
+# Check current RBAC permissions
+$ kubectl auth can-i create deployments --namespace production
+yes
+
+$ kubectl auth can-i delete pods --namespace production --as alice
+no
+```
+
+Start with the most restrictive permissions and add more only when needed.
+
+---
+
+## Helm
+
+Managing complex applications with many Kubernetes manifests (Deployments, Services, ConfigMaps, Secrets, Ingress) becomes unwieldy. [Helm](https://helm.sh/) is the package manager for Kubernetes — it bundles related manifests into **charts**.
+
+### What Helm Does
+
+- **Charts** — packages of pre-configured Kubernetes resources
+- **Values** — customizable parameters for each deployment
+- **Releases** — deployed instances of a chart
+
+### Using Helm
+
+```bash
+# Add a chart repository
+$ helm repo add bitnami https://charts.bitnami.com/bitnami
+$ helm repo update
+
+# Search for charts
+$ helm search repo nginx
+NAME                  CHART VERSION   APP VERSION
+bitnami/nginx         15.0.0          1.25.3
+
+# Install a chart
+$ helm install my-nginx bitnami/nginx --set service.type=ClusterIP
+
+# List installed releases
+$ helm list
+NAME       NAMESPACE   REVISION   STATUS     CHART
+my-nginx   default     1          deployed   nginx-15.0.0
+
+# Upgrade with new values
+$ helm upgrade my-nginx bitnami/nginx --set replicaCount=3
+
+# Uninstall
+$ helm uninstall my-nginx
+```
+
+### Custom Values
+
+Instead of passing `--set` flags, create a values file:
+
+```yaml
+# my-values.yaml
+replicaCount: 3
+service:
+  type: ClusterIP
+  port: 80
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"
+```
+
+```bash
+$ helm install my-nginx bitnami/nginx -f my-values.yaml
+```
+
+Helm is used extensively in production Kubernetes environments. Understanding it prepares you for managing real-world deployments.
+
+---
+
+## Jobs and CronJobs
+
+Not all workloads run continuously. **Jobs** run a task to completion, and **CronJobs** run tasks on a schedule.
+
+### Job
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: database-backup
+spec:
+  backoffLimit: 3    # Retry up to 3 times on failure
+  template:
+    spec:
+      containers:
+        - name: backup
+          image: postgres:16
+          command: ["pg_dump", "-h", "db-service", "-U", "admin", "mydb"]
+      restartPolicy: Never
+```
+
+The Job runs the container until the command completes successfully. If it fails, Kubernetes retries up to `backoffLimit` times.
+
+### CronJob
+
+```yaml
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nightly-backup
+spec:
+  schedule: "0 2 * * *"    # 2:00 AM daily
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: backup
+              image: postgres:16
+              command: ["pg_dump", "-h", "db-service", "-U", "admin", "mydb"]
+          restartPolicy: Never
+```
+
+The `schedule` field uses standard cron syntax (the same format you learned in [Shell Scripting](/learn/foundations/shell-scripting/)). Use [crontab.guru](https://crontab.guru/) to build and verify cron expressions.
+
+```bash
+# View jobs
+$ kubectl get jobs
+$ kubectl get cronjobs
+```
+
+---
+
 ## Key Takeaways
 
 - Container orchestration solves the problems of scheduling, scaling, self-healing, service discovery, and rolling updates that appear when running containers at scale.
@@ -914,3 +1315,13 @@ The following table covers the `kubectl` commands you will use most frequently. 
 - **Declarative manifests** (YAML files applied with `kubectl apply -f`) are strongly preferred over imperative commands. Store them in version control, review them in pull requests, and apply them through CI/CD pipelines.
 - `kubectl` is the primary CLI tool. Master `get`, `describe`, `logs`, `apply`, `scale`, `rollout`, and `delete` to manage any Kubernetes workload.
 - Local tools like minikube let you practice everything in this section without a cloud account. Every concept here transfers directly to managed services like EKS, GKE, and AKS.
+
+## Resources & Further Reading
+
+- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [kubectl Cheat Sheet](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
+- [Kubernetes by Example](https://kubyexample.com/)
+- [Play with Kubernetes](https://labs.play-with-k8s.com/)
+- [Kubernetes The Hard Way](https://github.com/kelseyhightower/kubernetes-the-hard-way)
+- [Helm Documentation](https://helm.sh/docs/)
+- [CNCF Landscape](https://landscape.cncf.io/)

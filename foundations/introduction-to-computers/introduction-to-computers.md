@@ -205,14 +205,14 @@ To verify: (1 x 8) + (1 x 4) + (0 x 2) + (1 x 1) = 8 + 4 + 0 + 1 = 13. Correct.
 
 ### ASCII and Character Encoding
 
-Computers store text by assigning a number to each character. **ASCII** (American Standard Code for Information Interchange) is the original encoding, mapping 128 characters to the numbers 0-127. For example:
+Computers store text by assigning a number to each character. **[ASCII](https://www.asciitable.com/)** (American Standard Code for Information Interchange) is the original encoding, mapping 128 characters to the numbers 0-127. For example:
 
 - `A` = 65 (binary: `01000001`)
 - `a` = 97 (binary: `01100001`)
 - `0` = 48 (binary: `00110000`)
 - Space = 32 (binary: `00100000`)
 
-ASCII only covers basic English characters. Modern systems use **Unicode** (often encoded as **UTF-8**), which supports over 140,000 characters across all writing systems. UTF-8 is backwards-compatible with ASCII -- the first 128 characters are identical -- and is the standard encoding on the web and in Linux systems.
+ASCII only covers basic English characters. Modern systems use [**Unicode**](https://unicode.org/) (often encoded as **UTF-8**), which supports over 140,000 characters across all writing systems. UTF-8 is backwards-compatible with ASCII -- the first 128 characters are identical -- and is the standard encoding on the web and in Linux systems.
 
 > **Try It**: You can see the ASCII value of any character using Python:
 >
@@ -252,13 +252,13 @@ sequenceDiagram
 
 The moment power reaches the motherboard, the CPU begins executing instructions stored in the **firmware** chip. This firmware is either **BIOS** (Basic Input/Output System, the legacy standard) or **UEFI** (Unified Extensible Firmware Interface, the modern replacement).
 
-The firmware performs the **POST** (Power-On Self-Test), which checks that essential hardware is present and functional: CPU, RAM, storage controllers, video output. If POST fails, many systems emit a series of beeps or flash error codes -- you may have heard these if a stick of RAM was not seated properly.
+The firmware performs the **POST** (Power-On Self-Test, defined in the [UEFI specification](https://uefi.org/specifications)), which checks that essential hardware is present and functional: CPU, RAM, storage controllers, video output. If POST fails, many systems emit a series of beeps or flash error codes -- you may have heard these if a stick of RAM was not seated properly.
 
 After POST succeeds, the firmware looks for a **bootable device** -- an SSD, HDD, USB drive, or network interface -- based on the configured boot order.
 
 ### Step 2: Bootloader
 
-The firmware loads the **bootloader** from the boot device. On Linux systems, this is typically **GRUB** (GRand Unified Bootloader). The bootloader's job is to locate the operating system kernel, load it into RAM, and hand off control.
+The firmware loads the **bootloader** from the boot device. On Linux systems, this is typically [**GRUB** (GRand Unified Bootloader)](https://www.gnu.org/software/grub/manual/). The bootloader's job is to locate the operating system kernel, load it into RAM, and hand off control.
 
 GRUB can present a menu if multiple operating systems or kernel versions are installed, allowing the user to choose which one to boot. In cloud environments, the bootloader is usually configured to automatically load a single kernel with no user interaction.
 
@@ -273,7 +273,7 @@ The **kernel** is the core of the operating system. Once loaded into memory, it 
 
 ### Step 4: Init System
 
-The init system is responsible for starting all the services that make the system usable: networking, logging, SSH daemon, web servers, container runtimes, and so on. On modern Linux systems, the most common init system is **systemd**. Older systems used **SysVinit** or **Upstart**.
+The init system is responsible for starting all the services that make the system usable: networking, logging, SSH daemon, web servers, container runtimes, and so on. On modern Linux systems, the most common init system is [**systemd**](https://systemd.io/). Older systems used **SysVinit** or **Upstart**.
 
 The init system reads configuration files that define which services to start, in what order, and with what dependencies. For example, a web server should not start until the network is up.
 
@@ -325,6 +325,41 @@ The appropriate part of the CPU carries out the instruction. Arithmetic and logi
 
 After execution, the cycle repeats. Modern CPUs execute this cycle billions of times per second, and they use techniques like **pipelining** (overlapping the stages of multiple instructions) and **branch prediction** (guessing which instruction comes next) to maximize throughput.
 
+### CPU Cache Hierarchy
+
+The CPU is fast, but RAM is comparatively slow. To bridge this speed gap, CPUs include small amounts of extremely fast memory called **cache**, organized in levels:
+
+- **L1 Cache** — The fastest and smallest (typically 32-64 KB per core). Split into instruction cache and data cache. Accessed in about 1 nanosecond.
+- **L2 Cache** — Larger (256 KB - 1 MB per core) and slightly slower. Still much faster than RAM.
+- **L3 Cache** — Shared across all cores (4-64 MB total). Slower than L1/L2 but still 10x faster than RAM.
+
+When the CPU needs data, it checks L1 first, then L2, then L3, and only goes to RAM if the data is not cached (a **cache miss**). This hierarchy is why programs that access data sequentially (good **locality**) run faster than programs that jump around memory randomly — sequential access keeps the cache hot.
+
+Cache matters in practice. When you are sizing cloud instances or troubleshooting performance, understanding that CPU-intensive workloads benefit from larger caches helps you choose the right instance family. For example, [AWS compute-optimized instances](https://aws.amazon.com/ec2/instance-types/) have larger per-core caches than general-purpose instances.
+
+### CPU Virtualization Extensions
+
+Modern CPUs include hardware extensions specifically designed to support virtualization efficiently:
+
+- **Intel VT-x** and **AMD-V** allow a hypervisor to run virtual machines with near-native performance. Without these extensions, virtualization requires slow software emulation.
+- **Intel VT-d** and **AMD-Vi** provide I/O virtualization, allowing virtual machines to directly access hardware devices like network cards and storage controllers.
+
+These extensions are the foundation of cloud computing. Every EC2 instance, Azure VM, and GKE node runs on hardware with virtualization extensions enabled. They are also what makes local development tools like VirtualBox, VMware, and WSL 2 possible.
+
+The same hardware features that enable virtual machines also support containers indirectly. While containers use OS-level isolation (namespaces and cgroups rather than hardware virtualization), understanding that VMs and containers are different layers of the same abstraction stack is important. You will explore containers in [Containers](/learn/foundations/containers/) and the OS features they rely on in [OS Fundamentals](/learn/foundations/os-fundamentals/).
+
+> **Try It**: Check if your CPU supports virtualization extensions:
+>
+> ```bash
+> # Linux — look for vmx (Intel) or svm (AMD)
+> grep -E 'vmx|svm' /proc/cpuinfo | head -1
+>
+> # macOS — check if the hypervisor framework is supported
+> sysctl kern.hv_support
+> ```
+>
+> If virtualization is supported but not enabled, it may need to be turned on in your BIOS/UEFI settings.
+
 ### CPU Architectures: x86 vs ARM
 
 Not all CPUs speak the same language. The **instruction set architecture** (ISA) defines the set of instructions a CPU understands. Two dominant ISAs exist today:
@@ -334,8 +369,8 @@ Not all CPUs speak the same language. The **instruction set architecture** (ISA)
 | Design philosophy | CISC (Complex Instruction Set) | RISC (Reduced Instruction Set) |
 | Typical use | Desktops, servers, cloud VMs | Mobile devices, tablets, embedded systems |
 | Power consumption | Higher | Lower |
-| Key manufacturers | Intel, AMD | Apple (M-series), Qualcomm, AWS (Graviton) |
-| Cloud relevance | Most EC2 instances, Azure VMs | AWS Graviton instances, cost-efficient workloads |
+| Key manufacturers | Intel, AMD | Apple (M-series), Qualcomm, [AWS Graviton](https://aws.amazon.com/ec2/graviton/) |
+| Cloud relevance | Most [EC2 instances](https://aws.amazon.com/ec2/instance-types/), Azure VMs | AWS Graviton instances, cost-efficient workloads |
 
 The distinction matters in cloud computing. AWS Graviton instances (ARM-based) are often 20-40% less expensive than their x86 equivalents for compatible workloads. However, your software must be compiled for the target architecture -- a binary built for x86 will not run on ARM, and vice versa. This is why container images are often published for multiple architectures, and why you will see `amd64` and `arm64` tags in container registries.
 
@@ -358,3 +393,16 @@ The distinction matters in cloud computing. AWS Graviton instances (ARM-based) a
 - The **boot process** follows a precise chain: firmware (BIOS/UEFI) performs POST, loads the bootloader, which loads the kernel, which starts the init system, which launches services and presents a login prompt.
 - The CPU continuously runs the **fetch-decode-execute cycle**, processing billions of instructions per second. Different CPU architectures (x86 vs ARM) use different instruction sets, which affects software compatibility and cloud instance selection.
 - These fundamentals are not abstract theory -- they are the foundation for every decision you will make about virtual machines, containers, resource allocation, and performance troubleshooting in cloud infrastructure.
+
+## Resources & Further Reading
+
+- [How Computers Work — Code.org (video playlist)](https://www.youtube.com/playlist?list=PLzdnOPI1iJNcsRwJhvksEo1tJqjIqWbN-)
+- [Ben Eater — Building a computer from scratch](https://eater.net/)
+- [Crash Course Computer Science (YouTube)](https://www.youtube.com/playlist?list=PL8dPuuaLjXtNlUrzyH5r6jN9ulIgZBpdo)
+- [ARM Developer Documentation](https://developer.arm.com/documentation)
+- [Intel Architecture Documentation](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
+- [UEFI Specifications](https://uefi.org/specifications)
+- [GNU GRUB Manual](https://www.gnu.org/software/grub/manual/)
+- [Unicode](https://unicode.org/)
+- [ASCII Table](https://www.asciitable.com/)
+- [AWS EC2 Instance Types](https://aws.amazon.com/ec2/instance-types/)

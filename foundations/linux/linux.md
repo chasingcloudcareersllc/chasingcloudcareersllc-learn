@@ -13,7 +13,7 @@ Linux powers the vast majority of servers, cloud instances, and containers in pr
 
 Linux is a free, open-source operating system kernel created by Linus Torvalds in 1991. On its own, a kernel just manages hardware and processes. Combined with a distribution (or "distro") like Ubuntu, Debian, or Red Hat Enterprise Linux, it becomes a complete operating system with package managers, utilities, and configuration tools. Most cloud workloads, containers, and CI/CD runners use Linux because it is stable, scriptable, and free to deploy at scale. When you spin up an EC2 instance on AWS or a VM on Azure, you are almost certainly booting a Linux distribution.
 
-Throughout this section, we will use Ubuntu as our reference distribution. The commands and concepts transfer directly to other Debian-based distros and, with minor differences in package management, to RHEL-family systems as well.
+Throughout this section, we will use [Ubuntu](https://ubuntu.com/) as our reference distribution. The commands and concepts transfer directly to other Debian-based distros and, with minor differences in package management, to RHEL-family systems as well.
 
 ## Why It Matters
 
@@ -37,7 +37,7 @@ Before you can practice any of the commands in this section, you need access to 
 
 | Option | Best For | Cost |
 |---|---|---|
-| WSL (Windows Subsystem for Linux) | Windows users who want Linux alongside Windows | Free |
+| [WSL](https://learn.microsoft.com/en-us/windows/wsl/) (Windows Subsystem for Linux) | Windows users who want Linux alongside Windows | Free |
 | Cloud VM (AWS, Azure, GCP free tier) | Anyone who wants a real remote server to practice on | Free tier available |
 | Docker container | Users who already have Docker installed | Free |
 | Native Linux install or dual boot | Users ready to commit to Linux as a primary or secondary OS | Free |
@@ -309,7 +309,7 @@ wc -l /etc/passwd                     # count lines (each line is one user accou
 
 ## Package Management
 
-A **package manager** automates the process of installing, updating, and removing software. Instead of downloading executables from websites, you tell the package manager what you want and it handles downloading, dependency resolution, and installation. On Ubuntu and other Debian-based distributions, the package manager is **APT** (Advanced Package Tool).
+A **package manager** automates the process of installing, updating, and removing software. Instead of downloading executables from websites, you tell the package manager what you want and it handles downloading, dependency resolution, and installation. On Ubuntu and other Debian-based distributions, the package manager is [**APT**](https://help.ubuntu.com/community/AptGet/Howto) (Advanced Package Tool).
 
 ### Updating the Package Index
 
@@ -358,6 +358,27 @@ apt list --installed | grep python    # filter for packages with "python" in the
 The `|` (pipe) in the last command sends the output of `apt list` into `grep`, which filters for matching lines. Piping is a fundamental concept you will explore more in [Shell Scripting](/learn/foundations/shell-scripting/).
 
 > **Try It**: Update your package index, then install `tree` (a utility that displays directory structures as a tree). Run `tree ~/practice` to see the directory structure you created earlier. Then remove `tree` with `sudo apt remove tree`.
+
+### Managing Repositories and Pinning
+
+Beyond installing packages, `apt` lets you manage software sources and control versions:
+
+```bash
+# View configured repositories
+$ cat /etc/apt/sources.list
+$ ls /etc/apt/sources.list.d/
+
+# Add a third-party repository (example: Docker)
+$ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker.gpg
+$ echo "deb [signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list
+$ sudo apt update
+
+# Pin a package to a specific version (prevent unwanted upgrades)
+$ sudo apt-mark hold nginx
+$ sudo apt-mark unhold nginx
+```
+
+Adding repositories with GPG keys ensures that packages are authentic and haven't been tampered with. Pinning versions prevents unexpected upgrades from breaking your environment — a common practice in production servers.
 
 ---
 
@@ -467,6 +488,30 @@ Changing ownership almost always requires `sudo` because only root can give file
 
 > **Try It**: Create a file with `touch ~/practice/secret.txt`. Check its default permissions with `ls -l ~/practice/secret.txt`. Change the permissions to `600` (owner read/write only) with `chmod 600 ~/practice/secret.txt`. Verify with `ls -l` again. Then try `chmod 755` and check once more.
 
+### Understanding umask
+
+When you create a new file or directory, the default permissions are determined by the **umask** (user file-creation mask). The umask specifies which permission bits to *remove* from the default:
+
+```bash
+# View current umask
+$ umask
+0022
+
+# Default file permissions: 666 - 022 = 644 (rw-r--r--)
+# Default directory permissions: 777 - 022 = 755 (rwxr-xr-x)
+```
+
+The default umask of `022` removes write permission for group and others. You can change the umask for your session:
+
+```bash
+# Set a more restrictive umask
+$ umask 077    # Files: 600, Directories: 700 (only owner has access)
+
+# Verify by creating a new file
+$ touch testfile && ls -l testfile
+-rw------- 1 clouduser clouduser 0 Jan 15 10:00 testfile
+```
+
 ---
 
 ## User and Group Management
@@ -508,6 +553,30 @@ sudo usermod -aG sudo newuser         # give newuser sudo access
 ```
 
 The `-aG` flags mean "append to group." Without `-a`, the user would be removed from all other supplementary groups and placed only in the specified one. This is a common mistake that can lock users out of critical groups.
+
+### User Information Files
+
+The system stores user information in two key files:
+
+```bash
+# /etc/passwd — user account information (readable by all)
+$ grep clouduser /etc/passwd
+clouduser:x:1000:1000:Cloud User:/home/clouduser:/bin/bash
+```
+
+The fields are: `username:password:UID:GID:comment:home:shell`. The `x` in the password field means the actual password hash is stored in `/etc/shadow`.
+
+```bash
+# /etc/shadow — password hashes (readable only by root)
+$ sudo grep clouduser /etc/shadow
+clouduser:$6$rounds=5000$salt$hash...:19730:0:99999:7:::
+```
+
+For safely editing the sudoers file, always use `visudo` instead of editing `/etc/sudoers` directly. `visudo` validates the syntax before saving, preventing lockouts:
+
+```bash
+$ sudo visudo
+```
 
 ### sudo and Root Access
 
@@ -723,7 +792,7 @@ sudo grep -i "fail" /var/log/auth.log # case-insensitive search for "fail"
 
 ### journalctl
 
-On systems using **systemd** (which includes Ubuntu 16.04 and later), `journalctl` provides a unified interface to all system logs:
+On systems using **systemd** (which includes Ubuntu 16.04 and later), [`journalctl`](https://www.freedesktop.org/software/systemd/man/journalctl.html) provides a unified interface to all system logs:
 
 ```bash
 sudo journalctl                       # all logs (very long — use less-style navigation)
@@ -747,6 +816,144 @@ You will see messages about disk drives being detected, network interfaces comin
 
 > **Try It**: Run `uname -a` to see your kernel version, `df -h` to check disk space, and `free -h` to check memory. Then look at recent authentication events with `sudo tail -n 20 /var/log/auth.log`. If you are on a systemd system, try `sudo journalctl --since "10 minutes ago"` to see what has been logged recently.
 
+### Log Rotation
+
+Log files grow continuously. Without management, they can fill up an entire disk. **logrotate** is the standard tool for managing log file size on Linux.
+
+logrotate periodically:
+- **Rotates** logs — renames the current log (e.g., `syslog` → `syslog.1`) and starts a new one
+- **Compresses** old logs (`.gz` files) to save space
+- **Removes** logs older than a configured retention period
+
+Configuration files live in `/etc/logrotate.d/`:
+
+```bash
+# View nginx log rotation config
+$ cat /etc/logrotate.d/nginx
+/var/log/nginx/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 www-data adm
+    sharedscripts
+    postrotate
+        [ -f /var/run/nginx.pid ] && kill -USR1 $(cat /var/run/nginx.pid)
+    endscript
+}
+```
+
+This configuration rotates nginx logs daily, keeps 14 days of history, compresses old logs, and sends `USR1` to nginx after rotation (so nginx reopens its log files).
+
+> **Try It**: List the contents of `/etc/logrotate.d/` to see what log rotation configurations exist on your system:
+> ```bash
+> ls /etc/logrotate.d/
+> ```
+
+---
+
+## Setuid, Setgid, and Sticky Bit
+
+Beyond the standard read/write/execute permissions, Linux has three special permission bits:
+
+- **Setuid (Set User ID)** — When set on an executable, the program runs with the permissions of the file's *owner* rather than the user who executed it. The classic example is `/usr/bin/passwd`, which needs root access to modify `/etc/shadow` but must be runnable by any user. Setuid is represented by an `s` in the owner's execute position: `-rwsr-xr-x`.
+
+```bash
+# Set the setuid bit
+$ chmod u+s program
+$ chmod 4755 program    # Numeric: 4 = setuid
+```
+
+- **Setgid (Set Group ID)** — When set on a directory, new files created inside inherit the directory's group rather than the creator's primary group. This is useful for shared project directories. Represented by an `s` in the group's execute position: `drwxrwsr-x`.
+
+```bash
+# Set the setgid bit on a directory
+$ chmod g+s /shared/project/
+$ chmod 2775 /shared/project/   # Numeric: 2 = setgid
+```
+
+- **Sticky Bit** — When set on a directory, only a file's owner (or root) can delete or rename files in that directory, even if other users have write permission. The most common example is `/tmp`, where all users can create files but cannot delete each other's files. Represented by a `t` in the other's execute position: `drwxrwxrwt`.
+
+```bash
+# Set the sticky bit
+$ chmod +t /shared/tmp/
+$ chmod 1777 /shared/tmp/   # Numeric: 1 = sticky
+```
+
+> **Try It**: Check the permissions on `/tmp` and `/usr/bin/passwd`:
+> ```bash
+> ls -ld /tmp
+> ls -l /usr/bin/passwd
+> ```
+> You should see the sticky bit (`t`) on `/tmp` and the setuid bit (`s`) on `passwd`.
+
+---
+
+## Hard Links vs Symbolic Links
+
+Linux supports two types of links that let multiple names refer to the same data:
+
+**Hard links** point directly to the same inode as the original file. The data exists once on disk, but has multiple directory entries pointing to it. Deleting one hard link does not affect the others — the data is only removed when the last link is deleted.
+
+```bash
+# Create a hard link
+$ ln original.txt hardlink.txt
+
+# Both files share the same inode number
+$ ls -li original.txt hardlink.txt
+262144 -rw-r--r-- 2 clouduser clouduser 1024 Jan 15 10:00 hardlink.txt
+262144 -rw-r--r-- 2 clouduser clouduser 1024 Jan 15 10:00 original.txt
+```
+
+**Symbolic (soft) links** are pointers to a file path, similar to shortcuts. They have their own inode and simply store the path to the target. If the target is deleted, the symlink becomes a **dangling link** (broken).
+
+```bash
+# Create a symbolic link
+$ ln -s /etc/nginx/nginx.conf nginx-config
+
+# Symlinks show the target with ->
+$ ls -l nginx-config
+lrwxrwxrwx 1 clouduser clouduser 22 Jan 15 10:00 nginx-config -> /etc/nginx/nginx.conf
+```
+
+| Feature | Hard Link | Symbolic Link |
+|---|---|---|
+| Points to | Inode (data directly) | File path (name) |
+| Cross file systems | No | Yes |
+| Link to directories | No (usually) | Yes |
+| Breaks if target deleted | No | Yes (dangling link) |
+| Has own inode | No (shares inode) | Yes |
+
+Use symbolic links in most cases — they are more flexible and more obvious. Hard links are useful for backup systems and specific scenarios where you need guaranteed data access regardless of name changes.
+
+---
+
+## Device Files
+
+Linux represents hardware devices as special files in `/dev/`. Some of the most useful device files are not tied to hardware at all:
+
+| Device | Description | Common Use |
+|---|---|---|
+| `/dev/null` | Discards all data written to it | Suppress output: `command > /dev/null 2>&1` |
+| `/dev/zero` | Produces an infinite stream of null bytes | Create files of a specific size: `dd if=/dev/zero of=file bs=1M count=100` |
+| `/dev/random` | Produces random bytes (blocks when entropy is low) | Generate cryptographic keys |
+| `/dev/urandom` | Produces random bytes (never blocks) | General-purpose randomness |
+
+```bash
+# Discard all output from a command
+$ noisy-command > /dev/null 2>&1
+
+# Generate 32 random bytes, hex-encoded
+$ head -c 32 /dev/urandom | xxd -p
+
+# Create a 100 MB test file filled with zeros
+$ dd if=/dev/zero of=testfile bs=1M count=100
+```
+
+> **Try It**: Run `echo "hello" > /dev/null` — the text vanishes. Then run `head -c 16 /dev/urandom | xxd -p` to generate 16 random bytes in hexadecimal.
+
 ---
 
 ## Key Takeaways
@@ -761,3 +968,13 @@ You will see messages about disk drives being detected, network interfaces comin
 - User and group management lets you control access across a multi-user system. Use `sudo` instead of logging in as root.
 - Environment variables configure shell and program behavior. `PATH` determines where the shell looks for executables. Persist changes in `~/.bashrc`.
 - Logs live in `/var/log/` and are accessible through `journalctl`. When something breaks, logs are the first place to look.
+
+## Resources & Further Reading
+
+- [Ubuntu Server Guide](https://ubuntu.com/server/docs)
+- [The Linux Command Line (free book)](https://linuxcommand.org/tlcl.php)
+- [GNU Coreutils Manual](https://www.gnu.org/software/coreutils/manual/)
+- [Filesystem Hierarchy Standard](https://refspecs.linuxfoundation.org/FHS_3.0/fhs/index.html)
+- [Linux man-pages](https://man7.org/linux/man-pages/)
+- [apt Documentation](https://help.ubuntu.com/community/AptGet/Howto)
+- [journalctl Documentation](https://www.freedesktop.org/software/systemd/man/journalctl.html)

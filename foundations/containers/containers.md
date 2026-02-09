@@ -1,7 +1,7 @@
 ---
 title: "Containers"
 description: "Learn Docker — images, containers, Dockerfiles, volumes, networking, and Docker Compose."
-position: 11
+position: 13
 icon: "container"
 ---
 
@@ -11,7 +11,7 @@ Containers changed how software is built, shipped, and run. Instead of installin
 
 ## What Are Containers?
 
-A container is a lightweight, isolated environment that packages an application with all its dependencies — runtime, libraries, system tools, and configuration. Unlike virtual machines, containers share the host operating system kernel, making them fast to start and efficient with resources. Docker is the most widely used container platform and the one you will learn throughout this section.
+A container is a lightweight, isolated environment that packages an application with all its dependencies — runtime, libraries, system tools, and configuration. Unlike virtual machines, containers share the host operating system kernel, making them fast to start and efficient with resources. [Docker](https://www.docker.com/) is the most widely used container platform and the one you will learn throughout this section.
 
 ## Why It Matters
 
@@ -150,7 +150,7 @@ You can run multiple containers from the same image, each with its own writable 
 
 ### Registries
 
-A **registry** is a repository where images are stored and shared. **Docker Hub** is the default public registry and contains thousands of official and community images (Ubuntu, Nginx, Python, PostgreSQL, Redis, and many more). Organizations often run private registries (AWS ECR, Azure ACR, GitHub Container Registry) to store proprietary images.
+A **registry** is a repository where images are stored and shared. [**Docker Hub**](https://hub.docker.com/) is the default public registry and contains thousands of official and community images (Ubuntu, Nginx, Python, PostgreSQL, Redis, and many more). Organizations often run private registries (AWS ECR, Azure ACR, GitHub Container Registry) to store proprietary images.
 
 ```mermaid
 graph LR
@@ -333,11 +333,27 @@ docker image prune -a                # remove all unused images
 
 Images accumulate quickly. Run `docker image prune` periodically to reclaim disk space.
 
+### The `latest` Tag Pitfall
+
+The `latest` tag does not mean "most recent." It is just the default tag applied when no tag is specified. This creates problems:
+
+```bash
+# These are the same — both pull the "latest" tag
+$ docker pull nginx
+$ docker pull nginx:latest
+
+# But "latest" might be outdated if the maintainer tagged a newer version
+# Always pin specific versions in production:
+$ docker pull nginx:1.25.3
+```
+
+Using `latest` in production means your deployments are not reproducible — the same Dockerfile could produce different images on different days. Always pin versions with semantic versioning tags (e.g., `python:3.12-slim`, `nginx:1.25.3`).
+
 ---
 
 ## Dockerfiles
 
-A **Dockerfile** is a text file that contains instructions for building a Docker image. Each instruction creates a layer in the final image. Writing good Dockerfiles is a core skill for any infrastructure role.
+A [**Dockerfile**](https://docs.docker.com/reference/dockerfile/) is a text file that contains instructions for building a Docker image. Each instruction creates a layer in the final image. Writing good Dockerfiles is a core skill for any infrastructure role.
 
 ### Instructions Reference
 
@@ -486,13 +502,44 @@ README.md
 
    The final image contains only the compiled binary and a minimal Alpine Linux base, not the entire Go toolchain.
 
+### Named Build Stages
+
+For complex builds, name your stages and copy selectively:
+
+```dockerfile
+# Stage 1: Install dependencies
+FROM node:20-slim AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Stage 2: Build the application
+FROM node:20-slim AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Stage 3: Production image
+FROM node:20-slim AS production
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+USER node
+EXPOSE 3000
+CMD ["node", "dist/server.js"]
+```
+
+Each `FROM` starts a new stage. `COPY --from=deps` copies only production dependencies. `COPY --from=builder` copies only the built output. The final image contains neither the build tools nor dev dependencies, keeping it small and secure.
+
 > **Try It**: Create a directory called `~/docker-demo`. Inside it, create a file called `app.py` with the content `print("Hello from Docker!")`. Create a `Dockerfile` with `FROM python:3.12-slim`, `WORKDIR /app`, `COPY app.py .`, and `CMD ["python", "app.py"]`. Build it with `docker build -t demo:1.0 .` and run it with `docker run --rm demo:1.0`. You should see "Hello from Docker!" in the output.
 
 ---
 
 ## Volumes
 
-Containers are ephemeral. When a container is removed, any data written inside it is lost. **Volumes** solve this by providing persistent storage that exists independently of the container lifecycle.
+Containers are ephemeral. When a container is removed, any data written inside it is lost. [**Volumes**](https://docs.docker.com/storage/volumes/) solve this by providing persistent storage that exists independently of the container lifecycle.
 
 ### Why Volumes Matter
 
@@ -563,7 +610,7 @@ The key difference: named volumes are managed by Docker and are best for product
 
 ## Docker Networking
 
-Containers need to communicate with each other and with the outside world. Docker provides built-in networking that handles isolation, DNS resolution, and port mapping.
+Containers need to communicate with each other and with the outside world. Docker provides built-in [networking](https://docs.docker.com/network/) that handles isolation, DNS resolution, and port mapping.
 
 ### Network Types
 
@@ -644,7 +691,7 @@ graph LR
 
 ## Docker Compose
 
-Running individual `docker run` commands works for one or two containers. Real applications have multiple services — a web app, a database, a cache, a background worker. Typing out the `docker run` command for each service with all the flags, networks, and volumes becomes unmanageable. **Docker Compose** solves this by defining your entire application stack in a single YAML file.
+Running individual `docker run` commands works for one or two containers. Real applications have multiple services — a web app, a database, a cache, a background worker. Typing out the `docker run` command for each service with all the flags, networks, and volumes becomes unmanageable. [**Docker Compose**](https://docs.docker.com/compose/) solves this by defining your entire application stack in a single YAML file.
 
 ### What Docker Compose Solves
 
@@ -786,6 +833,170 @@ This rebuilds the `web` image and replaces the running container without affecti
 
 ---
 
+## Health Checks
+
+A running container is not necessarily a *healthy* container. The process might be alive but stuck, deadlocked, or unable to serve requests. **Health checks** let Docker (and orchestrators like Kubernetes) verify that a container is actually working.
+
+### In Dockerfile
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+COPY . .
+RUN pip install -r requirements.txt
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+CMD ["python", "app.py"]
+```
+
+### At Runtime
+
+```bash
+# Run with a health check
+$ docker run -d --name web \
+    --health-cmd="curl -f http://localhost:8080/health || exit 1" \
+    --health-interval=30s \
+    --health-timeout=5s \
+    myapp:latest
+
+# Check health status
+$ docker inspect --format='{{.State.Health.Status}}' web
+healthy
+```
+
+Health check statuses:
+- **starting** — within the start period, not yet checked
+- **healthy** — health check is passing
+- **unhealthy** — health check has failed `retries` times in a row
+
+Orchestrators like Kubernetes use health checks (called **probes**) to automatically restart unhealthy containers and remove them from load balancer rotation. Defining health checks is essential for production containers.
+
+---
+
+## Container Resource Limits
+
+By default, a container can use as much CPU and memory as the host has available. In production, you should always set resource limits to prevent one container from starving others.
+
+```bash
+# Limit memory to 512 MB and CPU to 1 core
+$ docker run -d --name web \
+    --memory=512m \
+    --cpus=1 \
+    myapp:latest
+
+# Limit memory with a swap limit
+$ docker run -d --memory=512m --memory-swap=1g myapp:latest
+
+# View resource usage in real time
+$ docker stats
+CONTAINER ID   NAME   CPU %   MEM USAGE / LIMIT   NET I/O
+abc123         web    2.5%    128MiB / 512MiB      1.2kB / 0B
+```
+
+What happens when limits are exceeded:
+- **Memory limit exceeded** — the container is killed by the OOM (Out-Of-Memory) killer. You will see `OOMKilled` in `docker inspect`.
+- **CPU limit exceeded** — the container is throttled (slowed down) but not killed.
+
+```bash
+# Check if a container was OOM killed
+$ docker inspect web --format='{{.State.OOMKilled}}'
+true
+```
+
+Under the hood, Docker uses Linux [cgroups](/learn/foundations/os-fundamentals/) to enforce these limits — the same mechanism you learned about in OS Fundamentals. In Kubernetes, these map to resource requests and limits in pod specifications.
+
+---
+
+## Container Security Basics
+
+Containers share the host kernel, so security is critical. A compromised container with root access and full capabilities could potentially affect the host system.
+
+### Run as Non-Root
+
+By default, containers run as root. This is unnecessary for most applications and increases risk:
+
+```dockerfile
+FROM python:3.12-slim
+WORKDIR /app
+
+# Create a non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+COPY --chown=appuser:appuser . .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Switch to non-root user
+USER appuser
+
+CMD ["python", "app.py"]
+```
+
+### Read-Only Filesystem
+
+Prevent containers from writing to the filesystem (except designated volumes):
+
+```bash
+$ docker run --read-only --tmpfs /tmp myapp:latest
+```
+
+### Drop Capabilities
+
+Linux capabilities grant specific privileges. Drop all and add back only what you need:
+
+```bash
+# Drop all capabilities, add only what's needed
+$ docker run --cap-drop ALL --cap-add NET_BIND_SERVICE myapp:latest
+```
+
+### Security Checklist
+
+| Practice | How |
+|---|---|
+| Run as non-root | `USER` instruction in Dockerfile |
+| Read-only filesystem | `--read-only` flag |
+| Drop capabilities | `--cap-drop ALL` |
+| Use minimal base images | `python:3.12-slim` or `alpine` instead of `python:3.12` |
+| Pin image versions | `nginx:1.25.3` not `nginx:latest` |
+| Scan for vulnerabilities | Use Trivy, Grype, or Docker Scout |
+
+These practices align with the principle of least privilege from [Security Fundamentals](/learn/foundations/security-fundamentals/) — give containers the minimum access they need.
+
+---
+
+## Image Scanning
+
+Container images can contain vulnerable packages inherited from base images or installed dependencies. **Image scanning** tools detect known vulnerabilities before you deploy.
+
+### Trivy
+
+[Trivy](https://trivy.dev/) is a popular open-source scanner:
+
+```bash
+# Install Trivy
+$ sudo apt-get install trivy
+
+# Scan an image
+$ trivy image myapp:latest
+myapp:latest (ubuntu 22.04)
+Total: 12 (HIGH: 3, CRITICAL: 1)
+
+┌────────────┬──────────┬──────────┬─────────────────────┐
+│  Library   │ Vuln ID  │ Severity │ Installed → Fixed   │
+├────────────┼──────────┼──────────┼─────────────────────┤
+│ openssl    │ CVE-...  │ CRITICAL │ 3.0.2 → 3.0.13     │
+│ curl       │ CVE-...  │ HIGH     │ 7.81.0 → 7.81.1    │
+└────────────┴──────────┴──────────┴─────────────────────┘
+
+# Scan and fail if critical vulnerabilities found (useful in CI)
+$ trivy image --severity CRITICAL --exit-code 1 myapp:latest
+```
+
+Integrate scanning into your [CI/CD pipeline](/learn/foundations/cicd/) to catch vulnerabilities before images reach production. Many container registries (Docker Hub, GitHub Container Registry, Amazon ECR) also provide built-in scanning.
+
+---
+
 ## Key Takeaways
 
 - Containers package an application with its dependencies and share the host kernel. They are lighter, faster, and more portable than virtual machines.
@@ -798,3 +1009,13 @@ This rebuilds the `web` image and replaces the running container without affecti
 - Volumes provide persistent storage. Named volumes are best for production data. Bind mounts are best for development.
 - Custom Docker networks provide DNS-based service discovery. Containers on the same network can reach each other by name.
 - Docker Compose defines multi-container applications in a single YAML file. One command (`docker compose up`) starts everything. This is the foundation for local development and testing before deploying to [Container Orchestration](/learn/foundations/container-orchestration/) platforms like Kubernetes.
+
+## Resources & Further Reading
+
+- [Docker Documentation](https://docs.docker.com/)
+- [Dockerfile Reference](https://docs.docker.com/reference/dockerfile/)
+- [Dockerfile Best Practices](https://docs.docker.com/build/building/best-practices/)
+- [Docker Hub](https://hub.docker.com/)
+- [Play with Docker (browser lab)](https://labs.play-with-docker.com/)
+- [OCI Specifications](https://opencontainers.org/)
+- [Trivy (image scanner)](https://trivy.dev/)

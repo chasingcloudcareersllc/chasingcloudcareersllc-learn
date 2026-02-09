@@ -11,7 +11,7 @@ Shell scripts handle system tasks well, but larger automation, tooling, and infr
 
 ## What Is Python?
 
-Python is a high-level, interpreted programming language known for its readability and broad ecosystem. It runs on every major operating system and is used for automation scripts, CLI tools, web APIs, infrastructure management (Ansible, Pulumi), and machine learning. Unlike compiled languages such as C or Go, Python executes code line by line through an interpreter, which makes it fast to write and test even if it runs slower than compiled alternatives. For the automation, tooling, and infrastructure work you will do, that tradeoff is almost always worth it.
+[Python](https://www.python.org/) is a high-level, interpreted programming language known for its readability and broad ecosystem. It runs on every major operating system and is used for automation scripts, CLI tools, web APIs, infrastructure management (Ansible, Pulumi), and machine learning. Unlike compiled languages such as C or Go, Python executes code line by line through an interpreter, which makes it fast to write and test even if it runs slower than compiled alternatives. For the automation, tooling, and infrastructure work you will do, that tradeoff is almost always worth it.
 
 ## Why It Matters
 
@@ -796,7 +796,7 @@ The `s` at the end of `loads` and `dumps` stands for "string." This is an easy w
 
 ### Working with YAML
 
-YAML is the configuration format for Kubernetes, Ansible, Docker Compose, GitHub Actions, and many other infrastructure tools. Python does not include a YAML parser in the standard library, so you need to install one:
+YAML is the configuration format for Kubernetes, Ansible, Docker Compose, GitHub Actions, and many other infrastructure tools. Python does not include a YAML parser in the standard library, so you need to install [PyYAML](https://pyyaml.org/wiki/PyYAMLDocumentation):
 
 ```bash
 pip install pyyaml
@@ -932,7 +932,7 @@ The `as e` syntax captures the exception object so you can include its message i
 
 ## Virtual Environments
 
-When you install a Python package with `pip`, it goes into a system-wide location by default. This creates problems when different projects need different versions of the same library. Virtual environments solve this by giving each project its own isolated set of packages.
+When you install a Python package with [`pip`](https://pip.pypa.io/en/stable/), it goes into a system-wide location by default. This creates problems when different projects need different versions of the same library. Virtual environments ([`venv`](https://docs.python.org/3/library/venv.html)) solve this by giving each project its own isolated set of packages.
 
 ### Why Virtual Environments Matter
 
@@ -1232,6 +1232,286 @@ This `if __name__` pattern is a Python convention you will see in every well-str
 
 ---
 
+## Classes and Object-Oriented Programming
+
+Python supports object-oriented programming (OOP), which lets you bundle data and behavior together into **classes**. A class is a blueprint for creating objects.
+
+### Defining a Class
+
+```python
+class Server:
+    """Represents a server in our infrastructure."""
+
+    def __init__(self, hostname, ip_address, role="web"):
+        self.hostname = hostname
+        self.ip_address = ip_address
+        self.role = role
+        self.is_running = False
+
+    def start(self):
+        self.is_running = True
+        print(f"Starting {self.hostname} ({self.ip_address})")
+
+    def stop(self):
+        self.is_running = False
+        print(f"Stopping {self.hostname}")
+
+    def __str__(self):
+        status = "running" if self.is_running else "stopped"
+        return f"Server({self.hostname}, {self.role}, {status})"
+
+
+# Create instances (objects)
+web1 = Server("web-01", "10.0.1.10")
+db1 = Server("db-01", "10.0.2.10", role="database")
+
+web1.start()
+print(web1)        # Server(web-01, web, running)
+print(db1.role)    # database
+```
+
+Key concepts:
+- `__init__` is the constructor — it runs when you create a new instance
+- `self` refers to the current instance (like `this` in other languages)
+- `__str__` defines how the object appears when printed
+
+### Inheritance
+
+Classes can inherit from other classes, reusing and extending behavior:
+
+```python
+class WebServer(Server):
+    """A server specifically for serving web traffic."""
+
+    def __init__(self, hostname, ip_address, port=80):
+        super().__init__(hostname, ip_address, role="web")
+        self.port = port
+
+    def __str__(self):
+        base = super().__str__()
+        return f"{base} on port {self.port}"
+
+
+nginx = WebServer("nginx-01", "10.0.1.10", port=443)
+nginx.start()      # Inherited from Server
+print(nginx)       # Server(nginx-01, web, running) on port 443
+```
+
+### When to Use Classes vs Functions
+
+| Use Classes When | Use Functions When |
+|---|---|
+| You have data that belongs together | You have a single operation |
+| Objects have behavior (methods) | Input → output transformation |
+| You need multiple instances | State doesn't matter |
+| Modeling real-world entities | Utility operations |
+
+For infrastructure scripting, functions are often sufficient. Use classes when you're modeling things with state — servers, deployments, configurations — especially in larger projects.
+
+> **Try It**: Create a `Container` class with `name`, `image`, and `status` attributes. Add `start()` and `stop()` methods that change the status. Create two containers and start one of them.
+
+---
+
+## Type Hints
+
+Python is dynamically typed, but **type hints** (added in Python 3.5+) let you annotate what types your functions expect and return:
+
+```python
+def get_server_url(hostname: str, port: int = 443, secure: bool = True) -> str:
+    protocol = "https" if secure else "http"
+    return f"{protocol}://{hostname}:{port}"
+
+def parse_config(filepath: str) -> dict[str, str]:
+    config: dict[str, str] = {}
+    with open(filepath) as f:
+        for line in f:
+            key, value = line.strip().split("=", 1)
+            config[key] = value
+    return config
+
+# Common type hints
+from typing import Optional
+
+def find_server(name: str) -> Optional[dict]:
+    """Returns server info or None if not found."""
+    servers = {"web-01": {"ip": "10.0.1.10"}}
+    return servers.get(name)
+```
+
+Type hints do **not** enforce types at runtime — Python will not raise an error if you pass the wrong type. Their value is in:
+
+- **Documentation** — makes code easier to read and understand
+- **IDE support** — editors provide better autocomplete and error detection
+- **Static analysis** — tools like [mypy](https://mypy-lang.org/) check types before you run the code
+
+```bash
+# Install and run mypy
+$ pip install mypy
+$ mypy my_script.py
+```
+
+Adopt type hints gradually. Start with function signatures in new code — they pay for themselves immediately in readability.
+
+---
+
+## Testing with pytest
+
+Testing verifies that your code works correctly. [pytest](https://docs.pytest.org/) is the standard Python testing framework — simple to start with and powerful enough for complex projects.
+
+### Writing Tests
+
+Test files are named `test_*.py` and test functions start with `test_`:
+
+```python
+# calculator.py
+def add(a, b):
+    return a + b
+
+def divide(a, b):
+    if b == 0:
+        raise ValueError("Cannot divide by zero")
+    return a / b
+```
+
+```python
+# test_calculator.py
+import pytest
+from calculator import add, divide
+
+def test_add_positive_numbers():
+    assert add(2, 3) == 5
+
+def test_add_negative_numbers():
+    assert add(-1, -1) == -2
+
+def test_add_zero():
+    assert add(5, 0) == 5
+
+def test_divide():
+    assert divide(10, 2) == 5.0
+
+def test_divide_by_zero():
+    with pytest.raises(ValueError):
+        divide(10, 0)
+```
+
+### Running Tests
+
+```bash
+# Install pytest
+$ pip install pytest
+
+# Run all tests in the current directory
+$ pytest
+
+# Run with verbose output
+$ pytest -v
+
+# Run a specific test file
+$ pytest test_calculator.py
+
+# Run a specific test function
+$ pytest test_calculator.py::test_add_positive_numbers
+```
+
+### Why Testing Matters
+
+- **Confidence** — you know your code works before deploying
+- **Refactoring safety** — change code and immediately verify nothing broke
+- **Documentation** — tests show how your code is meant to be used
+- **CI/CD integration** — automated tests run on every push (you'll see this in [CI/CD](/learn/foundations/cicd/))
+
+Start by testing the functions that are most critical or most likely to break. You don't need 100% coverage to get value from testing — even a few tests catch the majority of bugs.
+
+> **Try It**: Create a function that converts Fahrenheit to Celsius (`(f - 32) * 5/9`). Write three test cases: for freezing point (32°F = 0°C), boiling point (212°F = 100°C), and body temperature (98.6°F ≈ 37°C). Run them with `pytest`.
+
+---
+
+## Logging
+
+For scripts that run in production, `print()` statements are not enough. The [logging](https://docs.python.org/3/library/logging.html) module provides structured, configurable output with severity levels:
+
+```python
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+
+logger = logging.getLogger(__name__)
+
+# Log at different severity levels
+logger.debug("Detailed diagnostic info")     # Hidden at INFO level
+logger.info("Server started on port 8080")   # Informational
+logger.warning("Disk usage above 80%")       # Something to watch
+logger.error("Failed to connect to database") # Something broke
+logger.critical("System out of memory")       # Critical failure
+```
+
+| Level | When to Use |
+|---|---|
+| `DEBUG` | Detailed diagnostic info (variable values, loop iterations) |
+| `INFO` | General operational events (started, completed, processed) |
+| `WARNING` | Something unexpected but not broken |
+| `ERROR` | Something failed but the program can continue |
+| `CRITICAL` | The program cannot continue |
+
+The key advantage over `print()`: you can change the logging level without modifying code. In development, set `DEBUG` to see everything. In production, set `WARNING` to only see problems. Logs can also be directed to files, syslog, or external services.
+
+---
+
+## CLI Argument Parsing
+
+For building command-line tools, the [argparse](https://docs.python.org/3/library/argparse.html) module (part of the standard library) handles argument parsing, validation, and help text:
+
+```python
+#!/usr/bin/env python3
+import argparse
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Check server health status"
+    )
+    parser.add_argument("hostname", help="Server hostname to check")
+    parser.add_argument("-p", "--port", type=int, default=443,
+                        help="Port to check (default: 443)")
+    parser.add_argument("-t", "--timeout", type=float, default=5.0,
+                        help="Connection timeout in seconds")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Enable verbose output")
+
+    args = parser.parse_args()
+
+    if args.verbose:
+        print(f"Checking {args.hostname}:{args.port} "
+              f"(timeout: {args.timeout}s)")
+
+    # Your health check logic here
+    print(f"{args.hostname}:{args.port} is healthy")
+
+if __name__ == "__main__":
+    main()
+```
+
+```bash
+$ python3 healthcheck.py web-01.example.com -p 8080 -v
+Checking web-01.example.com:8080 (timeout: 5.0s)
+web-01.example.com:8080 is healthy
+
+$ python3 healthcheck.py --help
+usage: healthcheck.py [-h] [-p PORT] [-t TIMEOUT] [-v] hostname
+...
+```
+
+`argparse` automatically generates `--help` output, validates types, and handles errors. This is how you turn a quick script into a reusable tool that teammates can use without reading the source code.
+
+> **Try It**: Build a CLI tool that takes a filename and a search term, then prints all lines containing the search term (like a simple `grep`). Add a `-n` flag to include line numbers.
+
+---
+
 ## Key Takeaways
 
 - Python is the dominant language for infrastructure automation. Learn it and you unlock access to thousands of tools and libraries.
@@ -1245,3 +1525,13 @@ This `if __name__` pattern is a Python convention you will see in every well-str
 - Catch specific exceptions with `try/except`. Never use bare `except:` in production code.
 - Virtual environments (`python3 -m venv .venv`) isolate project dependencies. Commit `requirements.txt` to version control, not the `.venv/` directory.
 - The `if __name__ == "__main__"` pattern separates reusable modules from executable scripts.
+
+## Resources & Further Reading
+
+- [Official Python Tutorial](https://docs.python.org/3/tutorial/)
+- [Python Standard Library](https://docs.python.org/3/library/)
+- [Real Python](https://realpython.com/)
+- [Automate the Boring Stuff (free online)](https://automatetheboringstuff.com/)
+- [PEP 8 Style Guide](https://peps.python.org/pep-0008/)
+- [pytest Documentation](https://docs.pytest.org/)
+- [PyPI (Python Package Index)](https://pypi.org/)

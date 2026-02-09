@@ -1,7 +1,7 @@
 ---
 title: "CI/CD"
 description: "Automate testing and deployment with GitHub Actions — workflows, triggers, jobs, secrets, and deploy pipelines."
-position: 10
+position: 12
 icon: "refresh-cw"
 ---
 
@@ -56,7 +56,7 @@ Most teams start with CI and Continuous Delivery. As confidence in the test suit
 
 ## Core Concepts
 
-GitHub Actions is a CI/CD platform built directly into GitHub. When you push code to a repository that contains workflow files, GitHub reads those files and executes the instructions on cloud-hosted machines. Everything revolves around four core concepts.
+[GitHub Actions](https://docs.github.com/en/actions) is a CI/CD platform built directly into GitHub. When you push code to a repository that contains workflow files, GitHub reads those files and executes the instructions on cloud-hosted machines. Everything revolves around four core concepts.
 
 ### Workflows, Jobs, Steps, and Runners
 
@@ -106,7 +106,7 @@ For learning and most open-source projects, GitHub-hosted runners are the right 
 
 ## Your First Workflow
 
-Workflow files live in the `.github/workflows/` directory at the root of your repository. The file must be valid YAML and use a `.yml` or `.yaml` extension. Let us build a simple CI workflow that checks out code, installs Python dependencies, and runs tests.
+Workflow files live in the `.github/workflows/` directory at the root of your repository. The file must be valid YAML and use a `.yml` or `.yaml` extension — see the [workflow syntax reference](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions) for every available key. Let us build a simple CI workflow that checks out code, installs Python dependencies, and runs tests.
 
 Create the file at `.github/workflows/ci.yml`:
 
@@ -374,11 +374,40 @@ strategy:
 
 > **Try It**: Take your CI workflow and add a matrix strategy that tests with Python 3.11 and 3.12 on `ubuntu-latest`. Push the change and check the Actions tab — you should see two parallel job runs, one for each Python version.
 
+### Running Jobs in Containers
+
+You can run an entire job inside a Docker container, giving you full control over the execution environment:
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: python:3.12-slim
+      env:
+        DATABASE_URL: postgres://postgres:password@db:5432/test
+
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -r requirements.txt
+      - run: pytest
+```
+
+The `container` key runs your job steps inside the specified Docker image. The `services` key starts companion containers (databases, caches) that your job can connect to by hostname. This is powerful for integration testing.
+
 ---
 
 ## Actions from the Marketplace
 
-Actions are reusable units of code that perform common tasks. Instead of writing shell commands for every operation, you use pre-built actions maintained by GitHub, verified publishers, or the community.
+Actions are reusable units of code that perform common tasks. Instead of writing shell commands for every operation, you use pre-built actions from the [Actions Marketplace](https://github.com/marketplace?type=actions) maintained by GitHub, verified publishers, or the community.
 
 ### How to Use an Action
 
@@ -470,7 +499,7 @@ jobs:
 
 ### Secrets
 
-Secrets store sensitive values like API keys, tokens, and passwords. They are encrypted and never exposed in logs. GitHub automatically masks secret values in workflow output.
+[Secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions) store sensitive values like API keys, tokens, and passwords. They are encrypted and never exposed in logs. GitHub automatically masks secret values in workflow output.
 
 To add a secret:
 
@@ -667,6 +696,30 @@ This pattern — lint, test, build, conditionally deploy — is the standard CI/
 
 > **Try It**: Create a multi-job workflow with at least three jobs: `lint`, `test`, and `build`. Use `needs` to chain them sequentially. Open a pull request and observe that all three jobs run. Merge the PR and check whether you can add a conditional deploy job that only runs on `main`.
 
+### Deployment Environments and Approvals
+
+For production deployments, you can require manual approval using [GitHub Environments](https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment):
+
+```yaml
+jobs:
+  deploy-staging:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - run: ./deploy.sh staging
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://myapp.example.com
+    steps:
+      - run: ./deploy.sh production
+```
+
+When the `production` environment has required reviewers configured in your repository settings, the workflow pauses and waits for a team member to click "Approve" before proceeding. This adds a human gate to your deployment pipeline.
+
 ---
 
 ## Debugging Workflows
@@ -785,6 +838,121 @@ jobs:
 
 ---
 
+## Reusable Workflows
+
+As your organization grows, you will find yourself duplicating workflow logic across repositories. [Reusable workflows](https://docs.github.com/en/actions/using-workflows/reusing-workflows) solve this by letting you call one workflow from another.
+
+### Creating a Reusable Workflow
+
+A reusable workflow uses the `workflow_call` trigger:
+
+```yaml
+# .github/workflows/test-and-lint.yml (in a shared repo)
+name: Test and Lint
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        required: false
+        type: string
+        default: '20'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+```
+
+### Calling a Reusable Workflow
+
+```yaml
+# .github/workflows/ci.yml (in any repo)
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    uses: my-org/shared-workflows/.github/workflows/test-and-lint.yml@main
+    with:
+      node-version: '20'
+```
+
+This keeps your CI logic DRY (Don't Repeat Yourself) and ensures all repositories follow the same testing standards. When you update the shared workflow, every repository that calls it gets the update.
+
+---
+
+## OIDC for Cloud Authentication
+
+Storing cloud credentials (AWS keys, Azure service principal secrets) as GitHub secrets works but has drawbacks — secrets can leak, they need rotation, and they provide long-lived access.
+
+**OIDC (OpenID Connect)** provides a better approach: GitHub Actions authenticates directly with your cloud provider using short-lived tokens, with no stored secrets.
+
+```yaml
+# Example: Deploy to AWS without storing AWS keys
+name: Deploy
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write    # Required for OIDC
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/GitHubActionsRole
+          aws-region: us-east-1
+      - run: aws s3 sync ./build s3://my-bucket
+```
+
+How it works:
+1. GitHub generates a short-lived OIDC token for the workflow run
+2. The workflow exchanges this token with the cloud provider (AWS, Azure, GCP)
+3. The cloud provider verifies the token and issues temporary credentials
+4. Credentials expire after the workflow completes
+
+This is the recommended approach for production deployments. No long-lived secrets to manage, rotate, or worry about leaking. See [GitHub OIDC documentation](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect) for setup details.
+
+---
+
+## Concurrency Control
+
+By default, multiple workflow runs can execute simultaneously. The `concurrency` key prevents overlapping runs:
+
+```yaml
+name: Deploy
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false    # Don't cancel running deploys
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./deploy.sh
+```
+
+With `cancel-in-progress: true`, a new push cancels the previous run — useful for CI (you only care about the latest code). With `false`, the new run waits — safer for deployments where you don't want partial deploys.
+
+---
+
 ## Key Takeaways
 
 - CI/CD automates the loop from code change to production. Continuous Integration tests every change, Continuous Delivery keeps code release-ready, and Continuous Deployment ships automatically.
@@ -796,3 +964,11 @@ jobs:
 - A standard pipeline flows from lint to test to build to deploy. The deploy job should be conditional on the `main` branch to prevent accidental deployments from pull requests.
 - Debug workflows by reading logs, enabling `ACTIONS_STEP_DEBUG`, and adding temporary inspection steps. Most failures come from missing checkouts, wrong permissions, environment mismatches, or missing secrets.
 - Follow best practices: pin action versions, cache dependencies, fail fast with `needs`, set timeouts, protect secrets, and use GitHub environments for deployment gates.
+
+## Resources & Further Reading
+
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [GitHub Actions Marketplace](https://github.com/marketplace?type=actions)
+- [Workflow Syntax Reference](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
+- [Actions Security Hardening](https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions)
+- [Martin Fowler: Continuous Integration](https://martinfowler.com/articles/continuousIntegration.html)
